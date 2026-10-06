@@ -1,1 +1,1 @@
-{"eventServiceUrl":"","scope":"Živé udalosti nie sú pripojené. Dostupné sú iba operácie cez zapojený adaptér."}
+{"eventServiceUrl": "https://lf-interactive-file-map-service.vercel.app", "scope": "Read-only inventár cez zabezpečenú službu; prihlásenie vyžadované. Globálne Codex operácie sa nesledujú."}

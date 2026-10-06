@@ -14,7 +14,7 @@ for attempt in range(8):
         assert 'ActivityStore' in read('app.mjs')
         assert 'normalizeGraph' in read('model.mjs')
         data=json.loads(read('data/graph.json'));assert data['nodes']==[] and data['edges']==[]
-        config=json.loads(read('config.json'));assert config['eventServiceUrl']==''
+        config=json.loads(read('config.json'));assert config['eventServiceUrl']=='https://lf-interactive-file-map-service.vercel.app'
         for path in ['data-private/graph.json','private-data/graph.json']:
             try:read(path)
             except urllib.error.HTTPError as error:assert error.code==404
