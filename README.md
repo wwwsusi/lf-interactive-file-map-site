@@ -5,9 +5,11 @@ Verejná statická aplikácia pre interaktívnu mapu súborov. Tento repo obsahu
 ## Použitie
 
 1. Otvor nasadenú stránku.
-2. **Importovať graf** načíta vlastný JSON iba do pamäte prehliadača; nikam ho neposiela.
+2. **Importovať graf** načíta vlastný JSON a uloží ho v IndexedDB tohto prehliadača; nikam ho neposiela. Pri ďalšom otvorení sa obnoví aj dátum importu.
 3. Použi search, filtre, archív a detail uzla/väzby. **Demo aktivity** ukazuje iba syntetické read/write udalosti.
 4. **Pripojiť službu** je pripravené rozhranie pre samostatný autentifikovaný HTTPS backend. Žiadny backend nie je týmto repo nasadený; globálne Codex/connector operácie sa nesledujú.
+
+Graf je dostupný iba v rovnakom profile prehliadača a na rovnakom zariadení. Vymazanie údajov webu alebo anonymné okno môže vyžadovať nový import. **Vymazať uložený graf** odstráni lokálnu kópiu. Home / Reset ju zachová. Dátum importu nie je čas aktualizácie zdrojových dát; automatická synchronizácia zatiaľ nie je napojená.
 
 ## Build a hosting
 
