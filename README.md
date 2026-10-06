@@ -7,7 +7,7 @@ Verejná statická aplikácia pre interaktívnu mapu súborov. Tento repo obsahu
 1. Otvor nasadenú stránku.
 2. **Importovať graf** načíta vlastný JSON a uloží ho v IndexedDB tohto prehliadača; nikam ho neposiela. Pri ďalšom otvorení sa obnoví aj dátum importu.
 3. Použi search, filtre, archív a detail uzla/väzby. **Demo aktivity** ukazuje iba syntetické read/write udalosti.
-4. **Pripojiť službu** je pripravené rozhranie pre samostatný autentifikovaný HTTPS backend. Žiadny backend nie je týmto repo nasadený; globálne Codex/connector operácie sa nesledujú.
+4. **Pripojiť službu** je pripravené rozhranie pre samostatný autentifikovaný HTTPS backend. Vercel read-only služba používa krátkodobý bearer token iba v pamäti a kontrolu inventára každých 60 sekúnd; starší SSE adaptér zostáva podporovaný. Provider refresh má vlastný interval a čas snapshotu. Žiadny backend nie je týmto repo nasadený; globálne Codex/connector operácie sa nesledujú.
 
 Graf je dostupný iba v rovnakom profile prehliadača a na rovnakom zariadení. Vymazanie údajov webu alebo anonymné okno môže vyžadovať nový import. **Vymazať uložený graf** odstráni lokálnu kópiu. Home / Reset ju zachová. Dátum importu nie je čas aktualizácie zdrojových dát; automatická synchronizácia zatiaľ nie je napojená.
 
