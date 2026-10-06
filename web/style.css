@@ -3,3 +3,6 @@
 [hidden]{display:none!important}.graph-label{font-size:12px!important;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}.graph-dot{stroke:white;stroke-width:2px}.node.selected .graph-dot,.node:hover .graph-dot{stroke:var(--pink);stroke-width:3px}.node.busy-read .graph-dot{stroke:var(--read)}.node.busy-write .graph-dot{stroke:var(--write)}.node.completed .graph-dot{stroke:var(--ok)}.node.failed .graph-dot{stroke:var(--error)}#overview{font-weight:700;border-color:var(--pink)}
 
 .summary{flex-wrap:wrap;gap:8px 20px}#import-info{width:100%;font-size:12px}#forget{font-size:12px}
+
+.event-result{fill:none;stroke:var(--ok);stroke-width:3;opacity:.85}.event-result.failed{stroke:var(--error)}.node.busy-transfer .graph-dot{stroke:#9556c8}
+.event-path.transfer{stroke:#9556c8}.node.busy-transfer rect{stroke:#9556c8}

@@ -18,3 +18,7 @@ Node.js 22+, bez npm dependencies. `npm run check` a `npm run build`. Build vytv
 GitHub Pages: Settings → Pages → Source: **GitHub Actions**. Workflow po pushi na main overí model/build, nahrá dist a nasadí Pages. Pre verejný repo sa používa bezplatná dostupnosť Pages; interný projekt zostáva oddelene súkromný.
 
 Nevkladaj interný inventár do tohto verejného repo ani do jeho histórie. Na prácu s vlastnými dátami použi lokálny browser import alebo zabezpečený backend. Do web/config.json patrí iba verejná adresa služby, nikdy token ani heslo.
+
+## Skutočné udalosti
+
+Ak služba pri prihlásení oznámi nakonfigurovaný event journal, stránka načíta trvalú históriu a kontroluje nové udalosti každých päť sekúnd. Iba zapojené read/write/transfer adaptéry vytvárajú tieto záznamy; nejde o automatické sledovanie všetkých AI chatov. Aktívna operácia má smerovú animáciu, čerstvé dokončenie samostatný výsledkový ťah a historický replay nepredstiera aktuálne vykonávanie. Pri výpadku histórie sa animácia pozastaví. Detaily zobrazujú hash/readback dôkazy reportované adaptérom. Reduced motion zachováva stavy/históriu bez animácie. Prihlasovacie údaje zostávajú mimo verejného repo.
