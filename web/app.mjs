@@ -6,7 +6,7 @@ let importedAt=null,importFilename='',storageNote='',persisted=false;
 const storageKey=new URL('.',location.href).pathname;
 function openStorage(){return new Promise((resolve,reject)=>{const r=indexedDB.open('lf-file-map-local',1);r.onupgradeneeded=()=>r.result.createObjectStore('imports');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Úložisko je blokované inou kartou.'));});}
 async function localGraph(mode,value){const db=await openStorage();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('imports',mode==='get'?'readonly':'readwrite'),store=tx.objectStore('imports');const r=mode==='get'?store.get(storageKey):mode==='delete'?store.delete(storageKey):store.put(value,storageKey);let result;r.onsuccess=()=>result=r.result;tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Uloženie prerušené.'));});}finally{db.close();}}
-function importInfo(){$('import-info').textContent=importedAt?'Posledný import: '+new Date(importedAt).toLocaleString('sk')+' · '+importFilename+' · '+(persisted?'uložené v tomto prehliadači':'iba táto relácia')+(storageNote?' · '+storageNote:''):'Posledný import: —'+(storageNote?' · '+storageNote:'');$('forget').hidden=!importedAt&&!persisted;}
+function importInfo(){$('import-info').textContent=importedAt?'Posledný import: '+new Date(importedAt).toLocaleString('sk')+' · '+importFilename+' · '+(persisted?'uložené v tomto prehliadači':'iba táto relácia')+(storageNote?' · '+storageNote:''):'Posledný import: zatiaľ nebol uložený v tomto prehliadači'+(storageNote?' · '+storageNote:'');$('forget').hidden=!importedAt&&!persisted;}
 const real=new ActivityStore(),demo=new ActivityStore(),collapsed=new Set(),flashes=new Map();
 const areas=()=>[...AREAS,...new Set(current().nodes.map(n=>n.area).filter(a=>!AREAS.includes(a)))];
 const colors={'GitHub':'#46506b','Google Drive':'#d99b23','Google Sheets':'#22926d','Agenti':'#ca2468'};
@@ -73,7 +73,7 @@ function render(){
  }
  if(!nodes.length)svg('text',{x:width/2,y:height/2,'text-anchor':'middle',class:'empty-label'},sc).textContent=data.nodes.length?'Žiadne výsledky pri aktuálnych filtroch.':'Načítaj graf alebo pripoj zabezpečenú službu.';
  $('count').textContent=`${data.nodes.length} uzlov · ${data.edges.length} väzieb · ${nodes.length} pri filtroch`;
- $('coverage').textContent=data.updated_at?'Snapshot: '+new Date(data.updated_at).toLocaleString('sk'):'Snapshot: neoverený čas';
+ $('coverage').textContent=data.nodes.length===0?'Snapshot: žiadne dáta — importuj graf':Number.isFinite(Date.parse(data.updated_at))?'Snapshot: '+new Date(data.updated_at).toLocaleString('sk'):'Snapshot: čas zdrojových dát nie je známy';
  $('results').replaceChildren();
  if(pages>1){btn('←',()=>{page=Math.max(0,page-1);render();},$('results')).disabled=page===0;el('small',`Strana ${page+1} / ${pages}`,$('results'));btn('→',()=>{page=Math.min(pages-1,page+1);render();},$('results')).disabled=page>=pages-1;}
  if(query())for(const n of nodes.slice(0,12))btn(n.name,()=>select(n.id),$('results'));
