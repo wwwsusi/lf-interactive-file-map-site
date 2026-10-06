@@ -24,6 +24,7 @@ jobs:
   deploy:
     needs: build
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -31,5 +32,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/deploy-pages@v4
         id: deployment
+      - name: Verify actual Pages URL and privacy
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: python3 scripts/verify-site.py
