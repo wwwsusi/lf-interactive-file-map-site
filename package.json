@@ -1,0 +1,11 @@
+{
+  "name": "lf-interactive-file-map-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check web/app.mjs && node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "engines": {"node": ">=22"}
+}
