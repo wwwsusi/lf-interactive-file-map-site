@@ -66,3 +66,6 @@ export function mergeInventory(previous, next) {
   const edges=[...fresh.edges,...old.edges.filter(e=>!keys.has(e.id)&&all.has(e.source)&&all.has(e.target)).map(e=>({...e,stale:true}))];
   return normalizeGraph({...fresh,nodes,edges});
 }
+
+export const searchText=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_\-/.:]+/g,' ').replace(/\s+/g,' ').trim();
+export const matchesSearch=(node,query)=>{const haystack=searchText([node.name,node.id,node.path].join(' '));return searchText(query).split(' ').filter(Boolean).every(word=>haystack.includes(word));};

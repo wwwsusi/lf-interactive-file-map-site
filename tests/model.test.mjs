@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeGraph,validateEvent,mergeInventory,ActivityStore,safeUrl} from '../web/model.mjs';
+import {normalizeGraph,validateEvent,mergeInventory,ActivityStore,safeUrl,matchesSearch} from '../web/model.mjs';
 const graph={nodes:[{id:'drive:folder',name:'Root',type:'Priečinok'},{id:'drive:sheet',name:'Register',mime:'application/vnd.google-apps.spreadsheet'},{id:'github:repo:doc',name:'doc'},{id:'actor:adapter',name:'Adaptér'},{id:'https://example.org',name:'External'}],edges:[{source:'drive:folder',target:'drive:sheet',relation:'obsahuje',evidence:[{parent_id:'folder'}]}]};
 const make=(operation,status,operation_id='op')=>({event_id:crypto.randomUUID(),operation_id,timestamp:new Date().toISOString(),actor_id:'actor:adapter',operation,status,source_id:operation==='write'?'actor:adapter':'github:repo:doc',target_id:operation==='read'?'actor:adapter':'drive:sheet',evidence:{adapter:'test'},error:status==='failed'?'Test failure':null});
+test('Human search matches filename separators, accents and word order',()=>{
+ const node={name:'LF_CAMPAIGN_POZNAJ_SVOJE_TELO_BRIEF.md',path:'campaigns/idea'};
+ assert.equal(matchesSearch(node,'Poznaj svoje telo'),true);
+ assert.equal(matchesSearch({name:'Žrebovanie návštev'},'zrebovanie navstev'),true);
+ assert.equal(matchesSearch(node,'telo poznaj'),true);
+ assert.equal(matchesSearch(node,'missing term'),false);
+});
 test('Stable sheet IDs, Drive memberships and external provenance survive normalization',()=>{
  const g=normalizeGraph(graph);assert.equal(g.nodes[1].id,'drive:sheet');assert.equal(g.nodes[1].area,'Google Sheets');assert.equal(g.nodes[4].area,'Prepojené zdroje');assert.equal(g.edges[0].kind,'containment');assert.deepEqual(g.edges[0].evidence,[{parent_id:'folder'}]);
  assert.throws(()=>normalizeGraph({...graph,nodes:[...graph.nodes,{id:'drive:sheet',name:'Different identity'}]}),/duplicita/);
