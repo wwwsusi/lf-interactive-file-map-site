@@ -59,7 +59,7 @@ export function createDashboard({focusMap}){
  }
  function sourceView(){
   const box=make('section',null,root,'dash-group');make('h3','Pokrytie a čerstvosť',box);make('p','Čas úspešného čítania, úpravy dokumentu a zostavenia projekcie majú odlišný význam. Chyba zdroja neznamená prázdny zoznam.',box);
-  for(const s of state.data.sources){const card=make('article',null,box,'source-row');make('h4',s.title,card);make('p',`${s.status.toUpperCase()} · ${freshness(s).label}`,card);make('p','Posledné úspešné čítanie: '+stamp(s.last_success_at)+' · Úprava zdroja: '+stamp(s.modified_at),card);if(s.error)make('p',s.error,card,'conflict-label');if(s.warning)make('p',s.warning,card);const url=safeUrl(s.url);if(url){const a=make('a','Otvoriť zdroj ↗',card);a.href=url;a.target='_blank';a.rel='noopener noreferrer';}}
+  const sourceGrid=make('div',null,box,'source-grid');for(const s of state.data.sources){const card=make('article',null,sourceGrid,'source-row');make('h4',s.title,card);make('p',`${s.status.toUpperCase()} · ${freshness(s).label}`,card);make('p','Posledné úspešné čítanie: '+stamp(s.last_success_at)+' · Úprava zdroja: '+stamp(s.modified_at),card);if(s.error)make('p',s.error,card,'conflict-label');if(s.warning)make('p',s.warning,card);const url=safeUrl(s.url);if(url){const a=make('a','Otvoriť zdroj ↗',card);a.href=url;a.target='_blank';a.rel='noopener noreferrer';}}
   group('Dátové medzery',views(state.data).dataGaps,root);metricsView(root);const conflicts=state.data.items.filter(i=>i.conflicts.length);group('Nevyriešené konflikty',conflicts,root);make('p','Projekcia zostavená: '+stamp(state.data.generated_at),root);
  }
  function render(){
