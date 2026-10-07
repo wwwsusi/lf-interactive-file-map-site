@@ -6,13 +6,11 @@ This public repository contains code, licensed fonts, an empty graph and clearly
 
 ## Use
 
-Connect the configured secure service with your owner passphrase. The one-hour viewer token and dashboard data stay in memory only. Reload requires login again. Disconnect/expiry clears dashboard items, details, graph and operation history from memory and screen; late responses cannot restore the session.
+Import a private JSON snapshot using **Importovať snapshot** on the overview. No Google OAuth, API client credentials or provider requests are required by this browser. **Obnoviť report** recomputes the imported projection only and never updates source or import timestamps. New canonical facts require a newly prepared and imported snapshot. Source snapshot time/age, successful reads and local import time are distinct; missing dates stay unknown.
 
-The dashboard does not change prices, task statuses, approvals or publication. Its detail panel links to canonical evidence and the associated map source. Source failures show an error and preserve the age of the last successful snapshot. A missing source is not a successful empty result.
+Import accepts the existing graph JSON, dashboard projection v1, or the combined format below. A graph-only import remains a file inventory and cannot populate business facts. Explicit user imports (including business projections) are saved only in this browser's IndexedDB, never uploaded; **Vymazať uložený snapshot** removes that copy. Do not import sensitive files on a shared device. No private snapshots are bundled or committed.
 
-Manual graph import remains an explicitly selected, separate feature: its JSON is saved in this browser's IndexedDB and never uploaded. **Vymazať uložený graf** deletes it. Disconnect clears the displayed graph, but does not silently delete an explicitly saved import; a later reload can restore that manual import in the map view. Authenticated inventory and dashboard projections are never saved there. Home / Reset clears map filters and returns to Prehľad.
-
-Synthetic dashboard demo and synthetic activity demo are separate from authenticated business records. Neither writes to the service.
+The configured secure service remains optional for the map and registered-operation history. Login/polling do not request `/api/dashboard`. Connecting retains the explicitly imported report; disconnecting clears displayed dashboard, details, graph and history; an explicitly saved snapshot remains until deleted and can be restored by reload. Home / Reset clears map filters and returns to Prehľad. Synthetic demo is separate and never persisted.
 
 ## Ownership and semantics
 
@@ -33,9 +31,17 @@ Verified task mapping: `to-do` → `NEZAČATÉ`; `preparing` → `V PRÍPRAVE`; 
 
 Records join only through stable business IDs and file IDs. Missing IDs use labelled derived source anchors; changes to a source's title can change that anchor. No name matching or row-number joins. Conflicting values retain both sources; no newest-timestamp resolution.
 
-## Architecture and API
+## Offline architecture and import contract
 
-Canonical providers → secured read-only adapters → validation → rebuildable per-source projection/cache → authenticated `GET /api/dashboard` → memory-only dashboard. The existing private service is extended; no new backend/repository. Graph remains `GET /api/inventory`, with registered-operation endpoints unchanged.
+Canonical sources → explicit read-only export through an authorized tool → private snapshot → validated user import → browser-only dashboard. The export is derived evidence, never a second editable business master. An export may be partial and must preserve source errors, read times, provenance and conflicts. Do not infer campaign facts from graph names or links.
+
+Combined snapshot JSON:
+
+```json
+{"format":"lf-operating-snapshot","version":1,"graph":{"nodes":[],"edges":[]},"dashboard":{"schema_version":1,"generated_at":null,"sources":[],"items":[]}}
+```
+
+Either `graph` or `dashboard` may be omitted, but not both. Old graph-only imports remain supported. The frontend never generates a fake business projection from inventory. Prepare updated private exports separately; do not commit/upload provider data as public CI artifacts.
 
 Dashboard JSON v1:
 
@@ -48,7 +54,7 @@ Dashboard JSON v1:
 }
 ```
 
-Kinds: task, campaign, output, asset, service, product, idea, direction, decision, change. Source states: ok/error/missing/blocked. Timestamps distinguish document modification, successful provider read and projection assembly. Conflicts contain a field plus source/value pairs. Fields preserve source uncertainty. Known headers/identities are validated; schema changes produce an error. The API is read-only and uses no-store. No editing or manual cache overrides.
+Kinds: task, campaign, output, asset, service, product, idea, direction, decision, change. Source states: ok/error/missing/blocked. Timestamps distinguish document modification, successful provider read and projection assembly. Conflicts contain a field plus source/value pairs. Fields preserve source uncertainty. Known headers/identities are validated; schema changes produce an error. Imports are read-only. No editing or manual business overrides.
 
 Brand: adult canonical pink/navy, white, pastel and neutral; locally hosted Inter for UI and Oswald for display headings. Font copyright and SIL OFL are bundled in `web/fonts/OFL.txt`; no external font calls or substituted logo.
 
@@ -56,8 +62,8 @@ Brand: adult canonical pink/navy, white, pastel and neutral; locally hosted Inte
 
 Node.js 22+, no npm dependencies. `npm run check`, `npm run build`. `scripts/build.mjs` uses an explicit code/font allowlist and always emits an empty public graph. Tests cover status mapping, conflicts, stale/error data, publication evidence, session clearing and public artifact privacy. Browser QA covers desktop/mobile, empty/demo/error, keyboard, reduced motion and logout.
 
-**This change is prepared for review, not deployed.** Live business connection remains BLOCKED until server-side Google read-only OAuth access is configured and verified, then an explicitly authorized release passes authenticated end-to-end QA. A successful frontend build is not live-source verification. Existing production graph/events are a separate capability.
+**This change is prepared for review, not deployed.** The selected dashboard mode is offline snapshot import; Google OAuth is not a release prerequisite. Existing production graph/events are independent. The previously prepared optional private dashboard API is not called by this frontend and is not required for the offline release.
 
-GitHub Pages workflow deploys only main. The private service review branch disables automatic Vercel deployment. Do not merge or deploy the dashboard without the owner's further instruction.
+GitHub Pages deploys only main. Do not merge or deploy without the owner's further instruction. No new OAuth privacy-policy page or credentials are needed for this mode.
 
-Overview uses two desktop columns with evidence counts and an accessible idea-state donut. Counts are scoped to the loaded projection, with partial coverage shown. Offers compare current and explicitly proposed prices; absent proposals stay TBD, never inferred from historical prices. Manual report refresh requests `/api/dashboard?refresh=1`, bypasses source cache freshness, and retains last successful source data on failure. Demo refresh is synthetic only. No deployment is authorized by this change.
+Overview uses two desktop columns with scoped evidence counts, an accessible idea-state donut and explicit partial coverage. Current/proposed pricing stays distinct; absent proposals remain TBD. Historical prices are not proposed prices. Report refresh is local only; the UI states that new data requires a new import.
