@@ -67,3 +67,5 @@ Node.js 22+, no npm dependencies. `npm run check`, `npm run build`. `scripts/bui
 GitHub Pages deploys only main. Do not merge or deploy without the owner's further instruction. No new OAuth privacy-policy page or credentials are needed for this mode.
 
 Overview uses two desktop columns with scoped evidence counts, an accessible idea-state donut and explicit partial coverage. Current/proposed pricing stays distinct; absent proposals remain TBD. Historical prices are not proposed prices. Report refresh is local only; the UI states that new data requires a new import.
+
+Service views distinguish ACTIVE, IDEA/PROPOSED, PREPARING/PILOT and other lifecycle values from the imported register. ACTIVE never implies confirmed availability. Idea counts include service candidates by stable service ID without duplicating records or mixing NOW tasks. Service details retain descriptions, audience, value, included items, booking route and capacity when present; absent values stay TBD.
