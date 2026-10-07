@@ -35,3 +35,8 @@ export class DashboardState{
  fail(message){this.error=message;}
  clear(){this.epoch++;this.data=null;this.error='';this.demo=false;}
 }
+
+export function metrics(data){
+ const v=views(data), stages=new Map();for(const i of v.ideas){const stage=i.fields.evidence_status||'TBD';stages.set(stage,(stages.get(stage)||0)+1);}
+ return {ideas:v.ideas.length,tasks:v.now.length,campaigns:v.campaigns.length,outputs:v.outputs.length,conflicts:(data?.items||[]).filter(i=>i.conflicts.length).length,stages:[...stages].sort(([a],[b])=>a.localeCompare(b)),partial:(data?.sources||[]).some(s=>s.status!=='ok')};
+}

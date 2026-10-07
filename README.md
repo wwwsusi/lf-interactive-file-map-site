@@ -59,3 +59,5 @@ Node.js 22+, no npm dependencies. `npm run check`, `npm run build`. `scripts/bui
 **This change is prepared for review, not deployed.** Live business connection remains BLOCKED until server-side Google read-only OAuth access is configured and verified, then an explicitly authorized release passes authenticated end-to-end QA. A successful frontend build is not live-source verification. Existing production graph/events are a separate capability.
 
 GitHub Pages workflow deploys only main. The private service review branch disables automatic Vercel deployment. Do not merge or deploy the dashboard without the owner's further instruction.
+
+Overview uses two desktop columns with evidence counts and an accessible idea-state donut. Counts are scoped to the loaded projection, with partial coverage shown. Offers compare current and explicitly proposed prices; absent proposals stay TBD, never inferred from historical prices. Manual report refresh requests `/api/dashboard?refresh=1`, bypasses source cache freshness, and retains last successful source data on failure. Demo refresh is synthetic only. No deployment is authorized by this change.

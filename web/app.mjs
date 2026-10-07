@@ -126,7 +126,7 @@ function attach(){if(closed)return;const epoch=connectionEpoch;if(transport==='p
  stream.onerror=()=>{status('Obnovujem spojenie…','reconnecting');stream.close();retry=setTimeout(attach,3000);};
 }
 const dashboard=createDashboard({focusMap(fileId,sourceId,url){for(const id of ['search','source','type'])$(id).value='';$('archive').checked=true;const node=graph.nodes.find(n=>n.id===sourceId||n.id==='drive:'+fileId||n.url===url||n.provenance?.file_id===fileId);if(node)select(node.id);else{$('search').value=fileId||sourceId;render();$('notice').textContent='Zdroj nie je v načítanom grafe; canonical odkaz zostáva v detaile dashboardu.';}}});
-document.addEventListener('lf-dashboard-refresh',()=>{if(sessionToken)dashboard.load(endpoint,sessionToken);});
+document.addEventListener('lf-dashboard-refresh',()=>{if(sessionToken)dashboard.load(endpoint,sessionToken,true);});
 document.addEventListener('lf-session-expired',()=>{stop();$('notice').textContent='Prihlásenie vypršalo.';});
 const endpointSafe=value=>{const u=new URL(value);const loop=['127.0.0.1','localhost','[::1]'].includes(u.hostname);if(u.username||u.password||u.search||u.hash||(!loop&&u.protocol!=='https:')||!['http:','https:'].includes(u.protocol))throw Error('Služba potrebuje HTTPS; HTTP je povolené iba na localhost.');return u.origin;};
 $('connect').onclick=()=>$('connection-dialog').showModal();$('cancel').onclick=()=>$('connection-dialog').close();$('disconnect').onclick=()=>{stop();fetch(endpoint+'/api/logout',{method:'POST',credentials:'include'}).catch(()=>{});$('connection-dialog').close();};

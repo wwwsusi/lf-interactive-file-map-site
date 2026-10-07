@@ -1,13 +1,13 @@
-import {SECTIONS,DashboardState,views,freshness,publicationLabel,taskLabel,dateValue} from './dashboard-model.mjs';
+import {SECTIONS,DashboardState,views,freshness,publicationLabel,taskLabel,dateValue,metrics} from './dashboard-model.mjs';
 import {demoProjection} from './dashboard-demo.mjs';
 import {safeUrl,searchText} from './model.mjs';
 const make=(tag,text,parent,className)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;if(className)n.className=className;parent?.append(n);return n;};
 const action=(text,fn,parent)=>{const n=make('button',text,parent);n.type='button';n.onclick=fn;return n;};
-const labels={approval_evidence:'Dôkaz schválenia (zdroj / dátum / verzia)',registry_lifecycle:'Lifecycle podľa registra',registry_approval:'Schválenie podľa registra',registry_publication:'Publikovanie podľa registra',role:'Rola assetu',file_id:'Drive file ID',version:'Verzia',priority:'Priorita',task_status:'Úloha',next_step:'Ďalší krok',owner:'Zodpovednosť',due:'Termín / kontext',added_at:'Dátum pridania',lifecycle:'Lifecycle',placement:'Umiestnenie',objective:'Cieľ',start:'Začiatok',end:'Koniec',creative:'Kreatíva',approval:'Schválenie',publication:'Publikovanie',platform_verification:'Platformová evidencia',channel:'Kanál',publish_at:'Publikačný termín',availability:'Dostupnosť',price:'Aktuálna cena',evidence_status:'Stav evidencie',summary:'Stručný obsah',open_questions:'Otvorené otázky',blocking:'Blokuje ďalšiu prácu',date:'Dátum',results:'Výsledky',pending:'Lokálne pending actions'};
+const labels={approval_evidence:'Dôkaz schválenia (zdroj / dátum / verzia)',registry_lifecycle:'Lifecycle podľa registra',registry_approval:'Schválenie podľa registra',registry_publication:'Publikovanie podľa registra',role:'Rola assetu',file_id:'Drive file ID',version:'Verzia',priority:'Priorita',task_status:'Úloha',next_step:'Ďalší krok',owner:'Zodpovednosť',due:'Termín / kontext',added_at:'Dátum pridania',lifecycle:'Lifecycle',placement:'Umiestnenie',objective:'Cieľ',start:'Začiatok',end:'Koniec',creative:'Kreatíva',approval:'Schválenie',publication:'Publikovanie',platform_verification:'Platformová evidencia',channel:'Kanál',publish_at:'Publikačný termín',availability:'Dostupnosť',price:'Aktuálna cena',proposed_price:'Navrhovaná nová cena',price_effective:'Účinnosť ceny',evidence_status:'Stav evidencie',summary:'Stručný obsah',open_questions:'Otvorené otázky',blocking:'Blokuje ďalšiu prácu',date:'Dátum',results:'Výsledky',pending:'Lokálne pending actions'};
 export function createDashboard({focusMap}){
  const state=new DashboardState(),nav=document.getElementById('dashboard-nav'),root=document.getElementById('dashboard'),map=document.getElementById('map-workspace'),panel=document.getElementById('dashboard-detail');
- let section='overview',query='',filter='',connected=false;
- const stamp=value=>dateValue(value)===null?'TBD':new Date(value).toLocaleString('sk-SK');
+ let section='overview',query='',filter='',connected=false,loading=false;
+ const stamp=value=>dateValue(value)===null?'TBD':new Date(value).toLocaleString('sk-SK',{timeZone:'Europe/Prague'});
  function navigate(next){section=next;query='';filter='';panel.close();render();}
  for(const [key,label]of SECTIONS){const b=action(label,()=>navigate(key),nav);b.dataset.section=key;}
  function sourceFor(item){return state.data?.sources.find(s=>s.id===item.source_id);}
@@ -41,6 +41,21 @@ export function createDashboard({focusMap}){
   if(limit&&items.length>limit){make('p',`Zobrazených ${limit} z ${items.length} položiek.`,box,'dash-total');if(items[0]?.kind==='task'){const showAll=action('Zobraziť všetky NOW položky',()=>{showAll.remove();const list=make('div',null,box,'dash-grid');for(const item of items.slice(limit))itemCard(item,list);},box);}else action('Všetky položky →',()=>navigate(items[0]?.kind==='decision'?'direction':items[0]?.kind==='campaign'||items[0]?.kind==='output'?'campaigns':'sources'),box);}
   const grid=make('div',null,box,'dash-grid');for(const i of(limit?items.slice(0,limit):items))itemCard(i,grid);
  }
+ function metricsView(parent){
+  const m=metrics(state.data),box=make('section',null,parent,'metric-panel');make('h3','Stav načítanej evidencie',box);
+  const tiles=make('div',null,box,'metric-tiles');for(const [label,count,target]of [['Nápady',m.ideas,'direction'],['NOW úlohy',m.tasks,'overview'],['Kampane',m.campaigns,'campaigns'],['FB výstupy',m.outputs,'campaigns']])action(count+' · '+label,()=>navigate(target),tiles);
+  make('h4','Nápady podľa stavu evidencie',box);const chart=make('div',null,box,'idea-chart');
+  const colors=['#ED0D5B','#0F1D30','#8A0224','#526073','#FDF1F5'];let at=0;const stops=[];for(const [i,[label,count]]of m.stages.entries()){const end=at+count/Math.max(1,m.ideas)*100;stops.push(`${colors[i%colors.length]} ${at}% ${end}%`);at=end;}
+  const donut=make('div',null,chart,'idea-donut');donut.style.background=m.ideas?`conic-gradient(${stops.join(',')})`:'#F4F5F9';donut.setAttribute('role','img');donut.setAttribute('aria-label',m.stages.map(([s,n])=>s+': '+n).join(', ')||'Žiadny evidovaný nápad');make('strong',String(m.ideas),donut);
+  const legend=make('ul',null,chart,'chart-legend');for(const [i,[label,count]]of m.stages.entries()){const row=make('li',null,legend);make('span',null,row,'chart-key').style.background=colors[i%colors.length];action(label+' · '+count,()=>{navigate('direction');filter=label;render();},row);}
+  make('p',m.partial?'Čiastočné pokrytie: niektoré zdroje sú nedostupné.':'Počty položiek v načítanom rozsahu.',box,'section-note');make('p',`Konflikty: ${m.conflicts} · Stavy nápadov neznamenajú approval.`,box,'section-note');make('small','Projekcia: '+stamp(state.data.generated_at),box);
+ }
+ function priceTable(items,parent,limit=null){
+  const box=make('section',null,parent,'price-panel');make('h3','Cenník · aktuálny vs. navrhovaný',box);make('p','Nová cena je iba explicitne evidovaný návrh. Historická cena nie je návrh; TBD znamená chýbajúcu evidenciu.',box,'section-note');
+  const wrap=make('div',null,box,'price-scroll'),table=make('table',null,wrap,'price-table'),head=make('tr',null,make('thead',null,table));for(const h of ['Služba / produkt','Aktuálna','Navrhovaná nová'])make('th',h,head).scope='col';const body=make('tbody',null,table);
+  for(const i of(limit?items.slice(0,limit):items)){const row=make('tr',null,body);action(i.title,()=>detail(i),make('td',null,row));make('td',i.fields.price||'TBD',row);make('td',i.fields.proposed_price||'TBD',row);}
+  if(!items.length)make('p','Ceny v načítanom rozsahu nie sú dostupné.',box);if(limit&&items.length>limit)action(`Celý cenník (${items.length}) →`,()=>navigate('offers'),box);
+ }
  function sourceView(){
   const box=make('section',null,root,'dash-group');make('h3','Pokrytie a čerstvosť',box);make('p','Čas úspešného čítania, úpravy dokumentu a zostavenia projekcie majú odlišný význam. Chyba zdroja neznamená prázdny zoznam.',box);
   for(const s of state.data.sources){const card=make('article',null,box,'source-row');make('h4',s.title,card);make('p',`${s.status.toUpperCase()} · ${freshness(s).label}`,card);make('p','Posledné úspešné čítanie: '+stamp(s.last_success_at)+' · Úprava zdroja: '+stamp(s.modified_at),card);if(s.error)make('p',s.error,card,'conflict-label');if(s.warning)make('p',s.warning,card);const url=safeUrl(s.url);if(url){const a=make('a','Otvoriť zdroj ↗',card);a.href=url;a.target='_blank';a.rel='noopener noreferrer';}}
@@ -49,7 +64,7 @@ export function createDashboard({focusMap}){
  function render(){
   root.hidden=section==='map';map.hidden=section!=='map';for(const b of nav.querySelectorAll('button'))b.setAttribute('aria-current',b.dataset.section===section?'page':'false');if(section==='map'){window.dispatchEvent(new Event('resize'));return;}
   root.replaceChildren();const heading=make('div',null,root,'dash-heading');make('div',null,heading,'dash-heading-copy');make('p','LADY FITNESS / OPERATING DASHBOARD',heading.firstChild,'eyebrow');make('h2',SECTIONS.find(s=>s[0]===section)[1],heading.firstChild);
-  if(connected)action('Obnoviť údaje',()=>document.dispatchEvent(new Event('lf-dashboard-refresh')),heading);
+  const refresh=action(loading?'Obnovujem…':'Obnoviť report',()=>{if(state.demo){state.accept(demoProjection());render();}else document.dispatchEvent(new Event('lf-dashboard-refresh'));},heading);refresh.disabled=loading||(!connected&&!state.demo);refresh.title='Načíta aktuálne zdroje; nemení canonical údaje.';
   action(state.demo?'Zavrieť demo':'Pozrieť syntetické demo',()=>{},heading).onclick=()=>{const wasDemo=state.demo;state.clear();if(!wasDemo){state.demo=true;state.accept(demoProjection());}else if(connected)document.dispatchEvent(new Event('lf-dashboard-refresh'));render();};
   if(state.demo)make('p','DEMO · Všetky položky sú syntetické. Nejde o aktuálny stav Lady Fitness.',root,'dash-alert demo-alert');
   if(state.error)make('p',state.error+(state.data?' Posledný úspešný snapshot zostáva označený svojím vekom.':''),root,'dash-alert');
@@ -65,16 +80,16 @@ export function createDashboard({focusMap}){
    const match=i=>searchText(i.title+' '+i.id).includes(searchText(query))&&(!filter||Object.values(i.fields).includes(filter));v=Object.fromEntries(Object.entries(v).map(([k,a])=>[k,a.filter(match)]));
   }
   if(section==='overview'){
-   group('Aktuálny smer',v.direction,root,2,'Zaznamenaný smer; návrhy sú samostatne v Smer a nápady.');
-   group('Dôležité teraz',v.now,root,5,'Poradie podľa doloženej priority. Neznáma priorita zostáva TBD.');
-   group('Čaká na rozhodnutie',v.decisions,root,5,'Otvorené body príslušných vlastníkov; žiadny nový decision register.');
-   group('Kampane v príprave a v behu',v.campaigns.filter(i=>['PREPARING','RUNNING'].includes(i.fields.lifecycle)||i.conflicts.length),root,4);
-   group('Najbližšie Facebook výstupy',v.outputs.filter(i=>/NOT_PUBLISHED|TBD/.test(i.fields.publication||'TBD')),root,4,'Nepotvrdený termín sa neprepočítava ani nedopĺňa.');
-   const nextBox=make('section',null,root,'dash-group');make('h3','Ďalšie kroky',nextBox);make('p','Rovnaké NOW položky ako Dôležité teraz; nie druhý zoznam úloh.',nextBox,'section-note');const nextList=make('ol',null,nextBox,'next-list');for(const i of v.next.slice(0,5)){const row=make('li',null,nextList);action(i.title,()=>detail(i),row);make('p',i.fields.next_step||'TBD',row);}
-   group('Ponuky súvisiace s prioritami',v.relevantOffers,root,4,'Iba doložené väzby cez stabilné IDs.');group('Posledné doložené zmeny',v.changes,root,3);
+   const layout=make('div',null,root,'overview-layout'),left=make('div',null,layout,'overview-main'),right=make('div',null,layout,'overview-side');metricsView(right);priceTable(v.offers,right,5);
+   group('Aktuálny smer',v.direction,left,2,'Zaznamenaný smer; návrhy sú samostatne v Smer a nápady.');
+   group('Dôležité teraz',v.now,left,3,'Poradie podľa doloženej priority. Neznáma priorita zostáva TBD.');
+   group('Čaká na rozhodnutie',v.decisions,left,3,'Otvorené body príslušných vlastníkov; žiadny nový decision register.');
+   group('Kampane v príprave a v behu',v.campaigns.filter(i=>['PREPARING','RUNNING'].includes(i.fields.lifecycle)||i.conflicts.length),right,2);
+   group('Najbližšie Facebook výstupy',v.outputs.filter(i=>/NOT_PUBLISHED|TBD/.test(i.fields.publication||'TBD')),right,2,'Nepotvrdený termín sa neprepočítava ani nedopĺňa.');
+   group('Posledné doložené zmeny',v.changes,left,2);
   }else if(section==='campaigns'){group('Kampane',v.campaigns,root);group('Facebook výstupy',v.outputs,root);}
-  else if(section==='offers')group('Služby a produkty',v.offers,root);
+  else if(section==='offers'){priceTable(v.offers,root);group('Nové retailové návrhy',v.ideas.filter(i=>i.id.startsWith('LF-PROP-')),root,null,'Samostatné návrhy; nie cenové zmeny existujúcich produktov.');}
   else{group('Zaznamenaný smer a ciele',v.direction,root);group('Nápady a návrhy',v.ideas,root,null,'Návrh nie je schválený realizačný plán.');group('Otvorené rozhodnutia',v.decisions,root);}
  }
- render();return {navigate,clear(){connected=false;state.clear();panel.close();panel.replaceChildren();render();},async load(endpoint,token){connected=true;const epoch=state.epoch;try{const r=await fetch(endpoint+'/api/dashboard',{headers:{Authorization:'Bearer '+token},credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(30000)});if(epoch!==state.epoch)return;if(!r.ok){if(r.status===401){document.dispatchEvent(new Event('lf-session-expired'));return;}throw Error(r.status===404||r.status===405?'Dashboard API ešte nie je nasadené.':'Načítanie business údajov zlyhalo (HTTP '+r.status+').');}const data=await r.json();if(epoch!==state.epoch)return;state.demo=false;state.accept(data,epoch);}catch(e){if(epoch===state.epoch)state.fail(e.message);}render();},diagnostics:()=>({items:state.data?.items.length||0,demo:state.demo,error:state.error,section})};
+ render();return {navigate,clear(){connected=false;state.clear();panel.close();panel.replaceChildren();render();},async load(endpoint,token,force=false){if(loading)return;connected=true;loading=true;render();const epoch=state.epoch;try{const r=await fetch(endpoint+'/api/dashboard'+(force?'?refresh=1':''),{headers:{Authorization:'Bearer '+token},credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(30000)});if(epoch!==state.epoch)return;if(!r.ok){if(r.status===401){document.dispatchEvent(new Event('lf-session-expired'));return;}throw Error(r.status===404||r.status===405?'Dashboard API ešte nie je nasadené.':'Načítanie business údajov zlyhalo (HTTP '+r.status+').');}const data=await r.json();if(epoch!==state.epoch)return;state.demo=false;state.accept(data,epoch);}catch(e){if(epoch===state.epoch)state.fail(e.message);}finally{loading=false;}render();},diagnostics:()=>({items:state.data?.items.length||0,demo:state.demo,error:state.error,section})};
 }
