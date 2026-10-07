@@ -27,7 +27,7 @@ export function views(data){
  const items=data?.items||[],now=items.filter(i=>i.kind==='task').sort((a,b)=>priorityRank(a)-priorityRank(b)||a.title.localeCompare(b.title,'sk'));
  const campaigns=items.filter(i=>i.kind==='campaign'),outputs=items.filter(i=>i.kind==='output'&&/FACEBOOK/i.test(i.fields.channel||''));
  const linked=new Set([...now,...campaigns.filter(i=>['PREPARING','RUNNING'].includes(i.fields.lifecycle))].flatMap(i=>i.related_ids));
- return {now,next:now,campaigns,outputs,offers:items.filter(i=>['service','product'].includes(i.kind)),relevantOffers:items.filter(i=>['service','product'].includes(i.kind)&&linked.has(i.id)),direction:items.filter(i=>i.kind==='direction'),ideas:items.filter(i=>i.kind==='idea'),decisions:items.filter(i=>i.kind==='decision').sort((a,b)=>Number(b.fields.blocking===true)-Number(a.fields.blocking===true)),changes:items.filter(i=>i.kind==='change')};
+ return {now,next:now,campaigns,outputs,offers:items.filter(i=>['service','product'].includes(i.kind)),relevantOffers:items.filter(i=>['service','product'].includes(i.kind)&&linked.has(i.id)),direction:items.filter(i=>i.kind==='direction'),ideas:items.filter(i=>i.kind==='idea'||(i.kind==='service'&&['IDEA','PROPOSED'].includes(i.fields.lifecycle))),activeServices:items.filter(i=>i.kind==='service'&&i.fields.lifecycle==='ACTIVE'),serviceIdeas:items.filter(i=>i.kind==='service'&&['IDEA','PROPOSED'].includes(i.fields.lifecycle)),preparingServices:items.filter(i=>i.kind==='service'&&['PREPARING','PILOT'].includes(i.fields.lifecycle)),otherServices:items.filter(i=>i.kind==='service'&&!['ACTIVE','IDEA','PROPOSED','PREPARING','PILOT'].includes(i.fields.lifecycle)),decisions:items.filter(i=>i.kind==='decision').sort((a,b)=>Number(b.fields.blocking===true)-Number(a.fields.blocking===true)),changes:items.filter(i=>i.kind==='change')};
 }
 export class DashboardState{
  constructor(){this.data=null;this.error='';this.demo=false;this.epoch=0;}
@@ -37,6 +37,6 @@ export class DashboardState{
 }
 
 export function metrics(data){
- const v=views(data), stages=new Map();for(const i of v.ideas){const stage=i.fields.evidence_status||'TBD';stages.set(stage,(stages.get(stage)||0)+1);}
+ const v=views(data), stages=new Map();for(const i of v.ideas){const stage=i.fields.evidence_status||i.fields.lifecycle||'TBD';stages.set(stage,(stages.get(stage)||0)+1);}
  return {ideas:v.ideas.length,tasks:v.now.length,campaigns:v.campaigns.length,outputs:v.outputs.length,conflicts:(data?.items||[]).filter(i=>i.conflicts.length).length,stages:[...stages].sort(([a],[b])=>a.localeCompare(b)),partial:(data?.sources||[]).some(s=>s.status!=='ok')};
 }
