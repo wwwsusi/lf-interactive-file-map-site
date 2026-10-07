@@ -1,3 +1,8 @@
+const themeButton=document.getElementById('theme-toggle');
+function applyTheme(theme){document.documentElement.dataset.theme=theme;themeButton.textContent=theme==='dark'?'☀ Svetlý režim':'☾ Tmavý režim';themeButton.setAttribute('aria-pressed',String(theme==='dark'));}
+let savedTheme='dark';try{savedTheme=localStorage.getItem('lf-control-center-theme')||'dark';}catch{}
+applyTheme(savedTheme==='light'?'light':'dark');
+themeButton.onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(next);try{localStorage.setItem('lf-control-center-theme',next);}catch{}};
 import {parseSnapshot} from './snapshot.mjs';
 import {createDashboard} from './dashboard.mjs';
 import {AREAS,normalizeGraph,ActivityStore,safeUrl,matchesSearch} from './model.mjs';
