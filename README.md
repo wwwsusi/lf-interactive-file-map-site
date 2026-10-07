@@ -69,3 +69,19 @@ GitHub Pages deploys only main. Do not merge or deploy without the owner's furth
 Overview uses two desktop columns with scoped evidence counts, an accessible idea-state donut and explicit partial coverage. Current/proposed pricing stays distinct; absent proposals remain TBD. Historical prices are not proposed prices. Report refresh is local only; the UI states that new data requires a new import.
 
 Service views distinguish ACTIVE, IDEA/PROPOSED, PREPARING/PILOT and other lifecycle values from the imported register. ACTIVE never implies confirmed availability. Idea counts include service candidates by stable service ID without duplicating records or mixing NOW tasks. Service details retain descriptions, audience, value, included items, booking route and capacity when present; absent values stay TBD.
+
+CEO reporting v2 now separates the full NOW register from a maximum of five
+P0/P1 actionable NEXT items. Business decisions require explicit
+`decision_type: business`; unclassified open questions appear in Data Quality.
+Conflicted campaigns are excluded from the unambiguous running/preparing list.
+The AI JSON download exports the complete imported projection with source
+provenance, snapshot/import times, view IDs and current UI filters. Refresh only
+recalculates the imported snapshot; it never refreshes provider read timestamps.
+
+NOW provides priority, task status, area and owner filters; Services independently
+filters availability and audience/type. Stable LF-SVC IDs merge into one entity,
+retaining conflicting field values and additional source provenance. Ideas use
+only explicit FOCUS NOW/LATER/PARKED classifications; otherwise UNCLASSIFIED.
+Campaign coverage reports missing or unavailable GitHub briefs separately from
+creative approval and publication evidence. Public builds contain no imported
+business snapshots; use explicit private JSON import for current reporting data.
