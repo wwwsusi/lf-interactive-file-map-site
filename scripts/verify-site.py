@@ -10,7 +10,7 @@ def read(path):
 last=None
 for attempt in range(8):
     try:
-        html=read('');assert 'LF Interactive file map' in html and './app.mjs' in html
+        html=read('');assert 'Lady Fitness Control Center' in html and './app.mjs' in html
         assert 'ActivityStore' in read('app.mjs')
         assert 'normalizeGraph' in read('model.mjs')
         data=json.loads(read('data/graph.json'));assert data['nodes']==[] and data['edges']==[]
