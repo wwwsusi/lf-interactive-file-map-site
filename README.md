@@ -1,24 +1,69 @@
-# LF Interactive file map — web
+# LF Interactive file map — operating dashboard
 
-Verejná statická aplikácia pre interaktívnu mapu súborov. Tento repo obsahuje iba frontend, prázdny inventár a syntetické demo. Interné dokumenty, ich názvy/odkazy, originálne exporty, backend, udalosti ani credentials tu nie sú.
+Read-only Slovak operating dashboard in the existing application. **Prehľad** is the default; **Mapa zdrojov** preserves the graph, search, filters, imports, evidence and registered-operation history. Other views: Kampane a obsah, Ponuky, Smer a nápady, Stav zdrojov.
 
-## Použitie
+This public repository contains code, licensed fonts, an empty graph and clearly synthetic demo data only. Business records, internal document names/URLs/IDs, original exports and credentials belong to the private service and canonical sources. Do not commit them here or upload them as public CI artifacts.
 
-1. Otvor nasadenú stránku.
-2. **Importovať graf** načíta vlastný JSON a uloží ho v IndexedDB tohto prehliadača; nikam ho neposiela. Pri ďalšom otvorení sa obnoví aj dátum importu.
-3. Použi search, filtre, archív a detail uzla/väzby. **Demo aktivity** ukazuje iba syntetické read/write udalosti.
-4. **Pripojiť službu** je pripravené rozhranie pre samostatný autentifikovaný HTTPS backend. Vercel read-only služba používa krátkodobý bearer token iba v pamäti a kontrolu inventára každých 60 sekúnd; starší SSE adaptér zostáva podporovaný. Provider refresh má vlastný interval a čas snapshotu. Žiadny backend nie je týmto repo nasadený; globálne Codex/connector operácie sa nesledujú.
+## Use
 
-Graf je dostupný iba v rovnakom profile prehliadača a na rovnakom zariadení. Vymazanie údajov webu alebo anonymné okno môže vyžadovať nový import. **Vymazať uložený graf** odstráni lokálnu kópiu. Home / Reset ju zachová. Dátum importu nie je čas aktualizácie zdrojových dát; automatická synchronizácia zatiaľ nie je napojená.
+Import a private JSON snapshot using **Importovať snapshot** on the overview. No Google OAuth, API client credentials or provider requests are required by this browser. **Obnoviť report** recomputes the imported projection only and never updates source or import timestamps. New canonical facts require a newly prepared and imported snapshot. Source snapshot time/age, successful reads and local import time are distinct; missing dates stay unknown.
 
-## Build a hosting
+Import accepts the existing graph JSON, dashboard projection v1, or the combined format below. A graph-only import remains a file inventory and cannot populate business facts. Explicit user imports (including business projections) are saved only in this browser's IndexedDB, never uploaded; **Vymazať uložený snapshot** removes that copy. Do not import sensitive files on a shared device. No private snapshots are bundled or committed.
 
-Node.js 22+, bez npm dependencies. `npm run check` a `npm run build`. Build vytvorí dist iba z pevného allowlistu frontendu a vždy prepíše verejný inventár na prázdny graf.
+The configured secure service remains optional for the map and registered-operation history. Login/polling do not request `/api/dashboard`. Connecting retains the explicitly imported report; disconnecting clears displayed dashboard, details, graph and history; an explicitly saved snapshot remains until deleted and can be restored by reload. Home / Reset clears map filters and returns to Prehľad. Synthetic demo is separate and never persisted.
 
-GitHub Pages: Settings → Pages → Source: **GitHub Actions**. Workflow po pushi na main overí model/build, nahrá dist a nasadí Pages. Pre verejný repo sa používa bezplatná dostupnosť Pages; interný projekt zostáva oddelene súkromný.
+## Ownership and semantics
 
-Nevkladaj interný inventár do tohto verejného repo ani do jeho histórie. Na prácu s vlastnými dátami použi lokálny browser import alebo zabezpečený backend. Do web/config.json patrí iba verejná adresa služby, nikdy token ani heslo.
+| Projection | Canonical owner |
+|---|---|
+| Central operations, priority, task status, next step | Single canonical operations list; next steps and priorities are views of the same items |
+| Current campaign detail and local pending actions | Campaign brief |
+| Global relationships, assets, approval/publication evidence | Creative register |
+| Services, current price and availability | Services register |
+| Retail product facts and current price | Product catalogue |
+| Retail candidates | Proposals tab; never promoted to approved automatically |
+| Strategic direction and open questions | Relevant thematic owner; summaries link back |
+| Commit/implementation evidence | GitHub; never a substitute for business facts |
 
-## Skutočné udalosti
+Verified task mapping: `to-do` → `NEZAČATÉ`; `preparing` → `V PRÍPRAVE`; `running` → `PREBIEHA`. This mapping applies only to task status. Lifecycle, Proposed/Executed placement, creative state, approval and publication are separate dimensions.
 
-Ak služba pri prihlásení oznámi nakonfigurovaný event journal, stránka načíta trvalú históriu a kontroluje nové udalosti každých päť sekúnd. Iba zapojené read/write/transfer adaptéry vytvárajú tieto záznamy; nejde o automatické sledovanie všetkých AI chatov. Aktívna operácia má smerovú animáciu, čerstvé dokončenie samostatný výsledkový ťah a historický replay nepredstiera aktuálne vykonávanie. Pri výpadku histórie sa animácia pozastaví. Detaily zobrazujú hash/readback dôkazy reportované adaptérom. Reduced motion zachováva stavy/históriu bez animácie. Prihlasovacie údaje zostávajú mimo verejného repo.
+`APPROVED` does not imply publication; placement does not imply either. Reported publication without explicit platform verification and a publication link displays **Publikovanie oznámené · platformovo neoverené**. A commit on main does not verify deployment. Unknown dates, owners, prices and metrics stay TBD. Relative dates remain source text, never inferred calendar dates.
+
+Records join only through stable business IDs and file IDs. Missing IDs use labelled derived source anchors; changes to a source's title can change that anchor. No name matching or row-number joins. Conflicting values retain both sources; no newest-timestamp resolution.
+
+## Offline architecture and import contract
+
+Canonical sources → explicit read-only export through an authorized tool → private snapshot → validated user import → browser-only dashboard. The export is derived evidence, never a second editable business master. An export may be partial and must preserve source errors, read times, provenance and conflicts. Do not infer campaign facts from graph names or links.
+
+Combined snapshot JSON:
+
+```json
+{"format":"lf-operating-snapshot","version":1,"graph":{"nodes":[],"edges":[]},"dashboard":{"schema_version":1,"generated_at":null,"sources":[],"items":[]}}
+```
+
+Either `graph` or `dashboard` may be omitted, but not both. Old graph-only imports remain supported. The frontend never generates a fake business projection from inventory. Prepare updated private exports separately; do not commit/upload provider data as public CI artifacts.
+
+Dashboard JSON v1:
+
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-01-01T00:00:00Z",
+  "sources": [{"id":"synthetic-source","title":"DEMO source","status":"ok","last_success_at":"2026-01-01T00:00:00Z","modified_at":null,"url":null}],
+  "items": [{"id":"synthetic-item","kind":"task","title":"DEMO task","source_id":"synthetic-source","fields":{"priority":"P0","task_status":"to-do","next_step":"DEMO step"},"related_ids":[],"links":[],"conflicts":[],"provenance":{"owner":"DEMO","anchor":"synthetic-anchor","identity":"synthetic"}}]
+}
+```
+
+Kinds: task, campaign, output, asset, service, product, idea, direction, decision, change. Source states: ok/error/missing/blocked. Timestamps distinguish document modification, successful provider read and projection assembly. Conflicts contain a field plus source/value pairs. Fields preserve source uncertainty. Known headers/identities are validated; schema changes produce an error. Imports are read-only. No editing or manual business overrides.
+
+Brand: adult canonical pink/navy, white, pastel and neutral; locally hosted Inter for UI and Oswald for display headings. Font copyright and SIL OFL are bundled in `web/fonts/OFL.txt`; no external font calls or substituted logo.
+
+## Validation / build / release
+
+Node.js 22+, no npm dependencies. `npm run check`, `npm run build`. `scripts/build.mjs` uses an explicit code/font allowlist and always emits an empty public graph. Tests cover status mapping, conflicts, stale/error data, publication evidence, session clearing and public artifact privacy. Browser QA covers desktop/mobile, empty/demo/error, keyboard, reduced motion and logout.
+
+**This change is prepared for review, not deployed.** The selected dashboard mode is offline snapshot import; Google OAuth is not a release prerequisite. Existing production graph/events are independent. The previously prepared optional private dashboard API is not called by this frontend and is not required for the offline release.
+
+GitHub Pages deploys only main. Do not merge or deploy without the owner's further instruction. No new OAuth privacy-policy page or credentials are needed for this mode.
+
+Overview uses two desktop columns with scoped evidence counts, an accessible idea-state donut and explicit partial coverage. Current/proposed pricing stays distinct; absent proposals remain TBD. Historical prices are not proposed prices. Report refresh is local only; the UI states that new data requires a new import.
