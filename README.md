@@ -1,3 +1,25 @@
+# Lady Fitness Control Center V2 — current implementation
+
+Review branch; not merged or deployed. The private service now provides cookie-authenticated `/api/dashboard` backed by current Supabase data. The public shell fetches it on connection and on **Obnoviť report** only. File-map inventory/events retain their independent polling.
+
+Structured current facts come from Supabase. GitHub narrative links remain references; 01_NOW parsing and Google Sheets do not supply live prices, priorities or statuses. Live results replace the whole projection, never merge onto a legacy snapshot. A failed refresh retains the last good projection with STALE / ERROR. Last successful backend read and projection generation timestamps are separate.
+
+Navigation: Overview / Calendar / Services / Products / Campaigns / Management / Data Quality / Files. Exact dates display DD-MM-YYYY; quarters stay separate. Services show current and proposed prices independently. Products with lifecycle IDEA retain LF-PROD identities. Canonical campaign progression is DRAFT 25%, PREPARING 50%, PUBLISHED 75%, COMPLETED 100%. Final outputs come only from campaign_outputs; working assets never become approved outputs. Drive references use permission-preserving links with exact filenames/IDs, without automatic external image requests. Empty social metrics show "No performance data yet".
+
+Modes: **LIVE SUPABASE**, **SNAPSHOT**, **DEMO**. Explicit imported projections are marked SNAPSHOT even if exported from a live response. They persist only by the existing explicit local import. Legacy snapshots remain historical; no private snapshot is bundled. Demo contains synthetic data. Public build allowlists source files/fonts and emits an empty graph. Authenticated operational data stays in session memory unless the user explicitly exports/imports it.
+
+Backend environment and cookie activation details: [private service README](https://github.com/wwwsusi/lf-interactive-file-map/blob/codex/control-center-supabase-v2/service/README.md). Cross-site cookie restrictions can block GitHub Pages → Vercel sessions; verify the user's browser before release. No privileged credential belongs in this repository/config/build/Actions artifact.
+
+Checks: `npm run check`, `npm run build`. Optional browser QA: `python scripts/qa-supabase-browser.py /path/to/synthetic-projection.json` with Python Playwright + Chromium. Its fixture is supplied externally and must contain synthetic data. [V2 audit](Audit%20Results/2026-10-09-supabase-data-layer.md).
+
+Next activation requires owner approval: backend environment setup and merge/deploy first, authenticated production readback, then matching frontend release. No automatic merge/deploy was performed.
+
+---
+
+## Historical implementation documentation — superseded for live operational authority
+
+The following earlier release notes are retained as history. Their offline-only/GitHub/NOW/Sheets descriptions do not describe V2 live mode.
+
 # LF Interactive file map — operating dashboard
 
 Read-only Slovak operating dashboard in the existing application. **Prehľad** is the default; **Mapa zdrojov** preserves the graph, search, filters, imports, evidence and registered-operation history. Other views: Kampane a obsah, Ponuky, Smer a nápady, Stav zdrojov.
