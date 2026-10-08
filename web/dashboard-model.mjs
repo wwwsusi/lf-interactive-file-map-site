@@ -4,11 +4,11 @@ export const TASK_STATUS=Object.freeze({'to-do':'NEZAČATÉ',preparing:'V PRÍPR
 export function taskLabel(value){return TASK_STATUS[value]||'UNCERTAIN';}
 export const dateValue=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))?Date.parse(value):null;
 export function freshness(source,now=Date.now()){
- if(source.provider==='drive'&&source.role==='markdown')return {label:'STALE · legacy Drive Markdown',stale:true,age:null};
+ if((source.provider==='drive'||source.id?.startsWith('drive:'))&&['markdown','now','direction','brief'].includes(source.role))return {label:'STALE · legacy Drive Markdown',stale:true,age:null};
  const stamp=dateValue(source.last_success_at);if(stamp===null)return {label:'Bez úspešného čítania',stale:true,age:null};
  if(stamp>now+60000)return {label:'Čas zdroja je v budúcnosti · UNCERTAIN',stale:true,age:null};
  const age=Math.max(0,now-stamp),minutes=Math.floor(age/60000);
- return {label:minutes<1?'Načítané práve teraz':minutes<60?`Načítané pred ${minutes} min`:minutes<1440?`Načítané pred ${Math.floor(minutes/60)} h`:`Načítané pred ${Math.floor(minutes/1440)} d`,age,stale:source.status!=='ok'||age>300000};
+ return {label:minutes<1?'Načítané práve teraz':minutes<60?`Načítané pred ${minutes} min`:minutes<1440?`Načítané pred ${Math.floor(minutes/60)} h`:`Načítané pred ${Math.floor(minutes/1440)} d`,age,stale:source.status!=='ok'||age>86400000};
 }
 export function publicationLabel(item){
  const f=item.fields||{},p=String(f.publication||'TBD'),v=String(f.platform_verification||'TBD');
@@ -39,7 +39,7 @@ export class DashboardState{
 
 export function metrics(data){
  const v=views(data), stages=new Map();for(const i of v.ideas){const stage=i.fields.evidence_status||i.fields.lifecycle||'TBD';stages.set(stage,(stages.get(stage)||0)+1);}
- return {ideas:v.ideas.length,tasks:v.now.length,campaigns:v.campaigns.length,outputs:v.outputs.length,conflicts:(data?.items||[]).filter(i=>i.conflicts.length).length,stages:[...stages].sort(([a],[b])=>a.localeCompare(b)),partial:(data?.sources||[]).some(s=>s.status!=='ok')};
+ return {ideas:v.ideas.length,tasks:v.now.length,campaigns:v.campaigns.length,outputs:v.outputs.length,conflicts:(data?.items||[]).filter(i=>i.conflicts.length).length,stages:[...stages].sort(([a],[b])=>a.localeCompare(b)),partial:(data?.sources||[]).some(s=>s.id!=='coverage:campaign-details'&&s.status!=='ok')};
 }
 
 export function campaignCoverage(data){

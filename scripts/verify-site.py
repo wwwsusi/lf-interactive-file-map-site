@@ -13,6 +13,9 @@ for attempt in range(8):
         html=read('');assert 'Lady Fitness Control Center' in html and './app.mjs' in html
         assert 'ActivityStore' in read('app.mjs')
         assert 'normalizeGraph' in read('model.mjs')
+        assert 'tableShell' in read('dashboard.mjs')
+        assert 'LEGACY_COVERAGE_ID' in read('reporting.mjs')
+        assert 'overview-stack' in read('style.css')
         data=json.loads(read('data/graph.json'));assert data['nodes']==[] and data['edges']==[]
         config=json.loads(read('config.json'));assert config['eventServiceUrl']=='https://lf-interactive-file-map-service.vercel.app'
         for path in ['data-private/graph.json','private-data/graph.json']:
