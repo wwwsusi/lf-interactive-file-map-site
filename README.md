@@ -8,11 +8,11 @@ Navigation: Overview / Calendar / Services / Products / Campaigns / Management /
 
 Modes: **LIVE SUPABASE**, **SNAPSHOT**, **DEMO**. Explicit imported projections are marked SNAPSHOT even if exported from a live response. They persist only by the existing explicit local import. Legacy snapshots remain historical; no private snapshot is bundled. Demo contains synthetic data. Public build allowlists source files/fonts and emits an empty graph. Authenticated operational data stays in session memory unless the user explicitly exports/imports it.
 
-Backend environment and cookie activation details: [private service README](https://github.com/wwwsusi/lf-interactive-file-map/blob/codex/control-center-supabase-v2/service/README.md). Cross-site cookie restrictions can block GitHub Pages → Vercel sessions; verify the user's browser before release. No privileged credential belongs in this repository/config/build/Actions artifact.
+Backend environment and cookie activation details: [private service README](https://github.com/wwwsusi/lf-interactive-file-map/blob/codex/control-center-supabase-v2/service/README.md). GitHub Pages → Vercel cross-site cookie support is **NOT production-verified**; mocked Chromium QA does not verify tablet/Safari behavior. Recommended durable target: this existing safe frontend and /api/* on the same HTTPS origin in the Vercel application. It needs a separate implementation PR; this PR only documents it. Existing public Pages/file-map functionality must remain. See the private service README for the primary topology/activation gate. No privileged credential belongs in this repository/config/build/Actions artifact.
 
 Checks: `npm run check`, `npm run build`. Optional browser QA: `python scripts/qa-supabase-browser.py /path/to/synthetic-projection.json` with Python Playwright + Chromium. Its fixture is supplied externally and must contain synthetic data. [V2 audit](Audit%20Results/2026-10-09-supabase-data-layer.md).
 
-Next activation requires owner approval: backend environment setup and merge/deploy first, authenticated production readback, then matching frontend release. No automatic merge/deploy was performed.
+Next activation requires owner approval: activate the backward-compatible backend first, verify the existing production /api/report frontend still works, then perform real /api/dashboard readback on the chosen same-origin topology and supported PC/tablet/Safari. Release the matching V2 frontend only after that gate. Keep /api/report DEPRECATED during transition; remove it in a separate cleanup after verified frontend cutover. V2 live code exclusively uses /api/dashboard. No domain/DNS change, merge or deployment was performed.
 
 ---
 
