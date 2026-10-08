@@ -1,4 +1,4 @@
-import {dateValue,freshness,publicationLabel} from './dashboard-model.mjs?v=20261008-compact-v3';
+import {dateValue,freshness,publicationLabel} from './dashboard-model.mjs?v=20261008-now-category-v5';
 export const LEGACY_COVERAGE_ID='coverage:campaign-details';
 export function statusTone(value){const s=String(value||'').trim().toUpperCase();if(['P0','DRAFT','BLOCKED','ERROR','NEZAČATÉ'].includes(s))return 'danger';if(['P1','PREPARING','PLANNED','V PRÍPRAVE'].includes(s))return 'warning';if(['ACTIVE','RUNNING','PREBIEHA','CONFIRMED'].includes(s))return 'success';if(['READY','PILOT','APPROVED'].includes(s))return 'info';return 'neutral';}
 // A display grouping, not a write or normalization of canonical lifecycle.
@@ -11,6 +11,7 @@ export function recentAdditions(data){return (data?.items||[]).filter(i=>(i.kind
 
 export const itemTitle=item=>String(item.title).replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[`*]/g,'');
 
-export function groupTasksByCategory(items){const groups=new Map();for(const item of items){const raw=String(item.fields.category||item.fields.area||'').trim(),category=raw&&!/^(TBD|MISSING|UNKNOWN)$/i.test(raw)?raw:'Kategória TBD';if(!groups.has(category))groups.set(category,[]);groups.get(category).push(item);}return [...groups].map(([category,items])=>({category,items}));}
+export function taskCategory(item){return String(item.fields.category||'').trim()||'Kategória TBD';}
+export function groupTasksByCategory(items){const groups=new Map();for(const item of items){const raw=taskCategory(item),category=raw&&!/^(TBD|MISSING|UNKNOWN)$/i.test(raw)?raw:'Kategória TBD';if(!groups.has(category))groups.set(category,[]);groups.get(category).push(item);}return [...groups].map(([category,items])=>({category,items}));}
 export function nowAddedDate(item){const raw=String(item.fields.added_at||'').trim();const iso=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/),sk=raw.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);if(!iso&&!sk)return null;const [y,m,d]=iso?iso.slice(1).map(Number):[Number(sk[3]),Number(sk[2]),Number(sk[1])];const date=new Date(Date.UTC(y,m-1,d));return date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d?date.getTime():null;}
 export function latestNowItems(data){return (data?.items||[]).filter(i=>i.kind==='task'&&nowAddedDate(i)!==null).sort((a,b)=>nowAddedDate(b)-nowAddedDate(a)).slice(0,5);}
