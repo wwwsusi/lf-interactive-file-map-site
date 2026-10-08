@@ -7,6 +7,7 @@ server=http.server.ThreadingHTTPServer(('127.0.0.1',8881),functools.partial(Quie
 async def main():
  async with async_playwright() as p:
   b=await p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox']);page=await b.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+  await page.clock.install()
   await page.goto('http://127.0.0.1:8881/')
   data=await page.evaluate("async()=>{const {demoProjection}=await import('./dashboard-demo.mjs');const d=demoProjection();d.items=d.items.filter(i=>i.kind==='task'||i.kind==='direction');d.sources=[d.sources[0]];d.sources[0].id='github:synthetic';d.sources[0].provider='github';d.sources[0].role='now';d.sources[0].revision='synthetic';for(const i of d.items){i.source_id=d.sources[0].id;i.title='LIVE SYNTHETIC '+i.title;i.fields.category='LF management';}return d;}")
   calls=0;fail=False
@@ -26,6 +27,7 @@ async def main():
   await page.get_by_role('button',name='Pripojiť službu',exact=True).click();await page.locator('#endpoint').fill('https://service.test');await page.locator('#password').fill('synthetic');await page.get_by_role('button',name='Pripojiť',exact=True).click()
   await page.wait_for_function("window.lfDashboardDiagnostics().mode==='github-live' && window.lfDashboardDiagnostics().items===3",timeout=10000)
   assert 'LIVE SYNTHETIC' in await page.locator('#dashboard').inner_text();assert calls==1
+  await page.clock.fast_forward(61000);await page.wait_for_timeout(100);assert calls==1,'Report refreshed automatically'
   await page.get_by_role('button',name='Obnoviť report',exact=True).click();await page.wait_for_timeout(150);assert calls==2
   fail=True;await page.get_by_role('button',name='Obnoviť report',exact=True).click();await page.wait_for_timeout(150);assert calls==3;assert 'LIVE SYNTHETIC' in await page.locator('#dashboard').inner_text();assert 'HTTP 502' in await page.locator('#dashboard').inner_text()
   await page.get_by_role('button',name='Pripojiť službu',exact=True).click();await page.get_by_role('button',name='Odpojiť',exact=True).click();assert await page.evaluate('window.lfDashboardDiagnostics().items')==0
