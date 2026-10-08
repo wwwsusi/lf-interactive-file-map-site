@@ -146,3 +146,9 @@ anonymous file access. Drive media is linked rather than automatically embedded.
 Post-specific objectives missing in the output register remain TBD; a campaign
 objective is not silently substituted. New-product dates are shown only when the
 source supports them; unknown dates do not establish a newest-first business fact.
+
+## Same-origin activation profile
+
+Default `npm run build` preserves GitHub Pages. `node scripts/build.mjs --profile=same-origin --output=/tmp/lf-shell` emits the same canonical allowlisted frontend with relative `/api/*`, cookie credentials and a locked service address. No private source data is read during either build. The Vercel service consumes an immutable reviewed commit with per-file Git blob integrity checks; do not maintain a second frontend source copy.
+
+Same-origin local HTTPS Chromium QA passed. This is not production Chrome/Safari/tablet verification. Keep the existing Pages endpoint/profile until owner-approved production cutover. No merge/deployment is performed by this implementation.
