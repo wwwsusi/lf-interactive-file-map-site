@@ -16,7 +16,7 @@ async def run():
   projection=await page.evaluate('''async()=>{const {demoProjection}=await import('./dashboard-demo.mjs');const d=demoProjection();const source=d.sources[0];source.provider='github';source.role='now';
    const item=(id,kind,title,fields={},related_ids=[],links=[])=>({id,kind,title,fields,related_ids,links,conflicts:[],source_id:source.id,provenance:{owner:'SYNTHETIC',anchor:id,identity:'synthetic'}});
    d.items=d.items.filter(i=>!['task','service','campaign','output','decision'].includes(i.kind));
-   for(let n=0;n<22;n++)d.items.push(item('task:'+n,'task','DEMO · '+['Overiť pripravenosť','Potvrdiť koncept','Vyhodnotiť pilot'][n%3]+' '+(n+1),{priority:n<5?'P0':n<10?'P1':'P2',task_status:n%2?'NEZAČATÉ':'V PRÍPRAVE',owner:'Demo owner',next_step:'Overiť konkrétny ďalší krok podľa schváleného procesu.',added_at:'2026-10-01',due:'TBD'}));
+   for(let n=0;n<22;n++)d.items.push(item('task:'+n,'task','DEMO · '+['Overiť pripravenosť','Potvrdiť koncept','Vyhodnotiť pilot'][n%3]+' '+(n+1),{priority:n<5?'P0':n<10?'P1':'P2',task_status:n%2?'NEZAČATÉ':'V PRÍPRAVE',owner:'Demo owner',next_step:'Overiť konkrétny ďalší krok podľa schváleného procesu.',area:['Kampaň','Seminár / Služba','Sociálne siete'][n%3],added_at:n<7?'2026-10-0'+(n+1):'TBD',due:'TBD'}));
    for(const [n,status] of ['ACTIVE','ACTIVE','ACTIVE','PREPARING','PILOT','IDEA','PROPOSED','PAUSED','RETIRED'].entries())d.items.push(item('LF-SVC-SYNTHETIC-'+n,'service','DEMO · Služba '+(n+1),{lifecycle:status,availability:n===0?'Nie':n<3?'Áno':'TBD',price:n<3?'10 €':'TBD',summary:'Syntetická služba na overenie tabuľky a dostupnosti.'}));
    d.items.push(item('decision:business','decision','DEMO · Vybrať variant pilotu',{decision_type:'business',why_needed:'Dva alternatívne koncepty',what_blocks:'Spustenie pilotu',blocking:true}));
    d.items.push(item('gap:supplier','data_gap','DEMO · Dodávateľ MISSING',{open_questions:'Supplier MISSING'}));
@@ -30,12 +30,18 @@ async def run():
   await page.wait_for_function('window.lfDashboardDiagnostics().items>20')
   root=page.locator('#dashboard')
   titles=await root.locator('.overview-stack>.dash-group>h3').all_text_contents()
-  assert titles==['Executive Summary','Aktuálny smer','Dôležité teraz','NEXT STEPS','PENDING DECISIONS','LAST BUSINESS DIRECTION CHANGES','NEW PRODUCTS / SERVICES ADDED'],titles
+  assert titles==['Executive Summary','Aktuálny smer','Dôležité teraz','NEXT STEPS','LAST BUSINESS DIRECTION CHANGES','NEW NOW items ADDED'],titles
   for title in ['Executive Summary','Aktuálny smer']:
    width=await root.locator('[data-title="'+title+'"]').evaluate('(el)=>el.getBoundingClientRect().width');assert width>1300,width
   assert await root.locator('[data-title="Dôležité teraz"] .task-row').count()==5
   assert await root.locator('[data-title="NEXT STEPS"] .task-row').count()==5
-  assert 'Dodávateľ MISSING' not in await root.locator('[data-title="PENDING DECISIONS"]').inner_text()
+  assert await root.locator('[data-title="PENDING DECISIONS"]').count()==0
+  assert await root.locator('[data-title="NEW PRODUCTS / SERVICES ADDED"]').count()==0
+  for title in ['Dôležité teraz','NEXT STEPS']:
+   assert await root.locator('[data-title="'+title+'"] .now-category').count()==3
+  latest=root.locator('[data-title="NEW NOW items ADDED"]')
+  assert await latest.locator('.task-row').count()==5
+  assert '7. 10. 2026' in await latest.locator('.task-row').first.inner_text()
   assert 'Pokrytie detailných campaign briefs' not in await root.locator('.data-status').inner_text()
   assert 'DEMO · nedostupný zdroj' in await root.locator('.data-status').inner_text()
   await page.screenshot(path=str(output/'lf-compact-overview.png'),full_page=True)
