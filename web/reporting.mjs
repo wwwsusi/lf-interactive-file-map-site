@@ -10,3 +10,7 @@ export function postDisplay(item,data){const evidence=evidenceFor(item,data);ret
 export function recentAdditions(data){return (data?.items||[]).filter(i=>(i.kind==='service'&&['IDEA','PROPOSED','PREPARING','PILOT'].includes(i.fields.lifecycle))||(i.kind==='idea'&&i.id.startsWith('LF-PROP-'))).sort((a,b)=>(dateValue(b.fields.added_at||b.fields.updated_at)||0)-(dateValue(a.fields.added_at||a.fields.updated_at)||0)).slice(0,5);}
 
 export const itemTitle=item=>String(item.title).replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[`*]/g,'');
+
+export function groupTasksByCategory(items){const groups=new Map();for(const item of items){const raw=String(item.fields.category||item.fields.area||'').trim(),category=raw&&!/^(TBD|MISSING|UNKNOWN)$/i.test(raw)?raw:'Kategória TBD';if(!groups.has(category))groups.set(category,[]);groups.get(category).push(item);}return [...groups].map(([category,items])=>({category,items}));}
+export function nowAddedDate(item){const raw=String(item.fields.added_at||'').trim();const iso=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/),sk=raw.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);if(!iso&&!sk)return null;const [y,m,d]=iso?iso.slice(1).map(Number):[Number(sk[3]),Number(sk[2]),Number(sk[1])];const date=new Date(Date.UTC(y,m-1,d));return date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d?date.getTime():null;}
+export function latestNowItems(data){return (data?.items||[]).filter(i=>i.kind==='task'&&nowAddedDate(i)!==null).sort((a,b)=>nowAddedDate(b)-nowAddedDate(a)).slice(0,5);}
