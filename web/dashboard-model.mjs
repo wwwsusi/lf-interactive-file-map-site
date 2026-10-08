@@ -1,5 +1,5 @@
 // Business projections are separate from the graph; explicit imports persist locally.
-export const SECTIONS=[['overview','Prehľad'],['now','NOW'],['offers','Služby'],['campaigns','Kampane a obsah'],['direction','Nápady'],['decisions','Rozhodnutia'],['sources','Kvalita dát'],['map','Súbory']];
+export const SECTIONS=[['overview','Prehľad'],['calendar','Kalendár'],['offers','Služby'],['products','Produkty'],['campaigns','Kampane'],['now','Management'],['sources','Kvalita dát'],['map','Súbory']];
 export const TASK_STATUS=Object.freeze({'to-do':'NEZAČATÉ',preparing:'V PRÍPRAVE',running:'PREBIEHA','NEZAČATÉ':'NEZAČATÉ','V PRÍPRAVE':'V PRÍPRAVE','PREBIEHA':'PREBIEHA'});
 export function taskLabel(value){return TASK_STATUS[value]||'UNCERTAIN';}
 export const dateValue=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))?Date.parse(value):null;
