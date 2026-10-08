@@ -1,4 +1,4 @@
-import {dateValue,freshness,publicationLabel} from './dashboard-model.mjs?v=20261008-now-category-v5';
+import {dateValue,freshness,publicationLabel} from './dashboard-model.mjs?v=20261008-live-v6';
 export const LEGACY_COVERAGE_ID='coverage:campaign-details';
 export function statusTone(value){const s=String(value||'').trim().toUpperCase();if(['P0','DRAFT','BLOCKED','ERROR','NEZAČATÉ'].includes(s))return 'danger';if(['P1','PREPARING','PLANNED','V PRÍPRAVE'].includes(s))return 'warning';if(['ACTIVE','RUNNING','PREBIEHA','CONFIRMED'].includes(s))return 'success';if(['READY','PILOT','APPROVED'].includes(s))return 'info';return 'neutral';}
 // A display grouping, not a write or normalization of canonical lifecycle.
