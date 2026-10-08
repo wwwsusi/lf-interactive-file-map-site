@@ -4,7 +4,7 @@ let savedTheme='dark';try{savedTheme=localStorage.getItem('lf-control-center-the
 applyTheme(savedTheme==='light'?'light':'dark');
 themeButton.onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(next);try{localStorage.setItem('lf-control-center-theme',next);}catch{}};
 import {parseSnapshot} from './snapshot.mjs';
-import {createDashboard} from './dashboard.mjs';
+import {createDashboard} from './dashboard.mjs?v=20261008-compact-v3';
 import {AREAS,normalizeGraph,ActivityStore,safeUrl,matchesSearch} from './model.mjs';
 const $=id=>document.getElementById(id), ns='http://www.w3.org/2000/svg';
 let graph=normalizeGraph({nodes:[],edges:[],coverage:{}}), demoGraph=null, selected=null, selectedEdge=null, page=0,zoom=1,dx=0,dy=0;

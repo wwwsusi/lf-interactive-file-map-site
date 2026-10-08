@@ -85,3 +85,42 @@ only explicit FOCUS NOW/LATER/PARKED classifications; otherwise UNCLASSIFIED.
 Campaign coverage reports missing or unavailable GitHub briefs separately from
 creative approval and publication evidence. Public builds contain no imported
 business snapshots; use explicit private JSON import for current reporting data.
+
+### Compact reporting / campaign ingestion
+
+Overview uses stacked, full-width sections. NOW and NEXT are separate projections
+(maximum five rows on Overview); services, campaign states and Facebook posts use
+compact tables. ACTIVE is independent of current availability. Colors map status
+semantics without changing the canonical value. Unknown/conflicting campaign
+lifecycle appears in REVIEW. Business decisions still require explicit evidence;
+missing supplier, dates and metadata remain data gaps.
+
+The former `coverage:campaign-details` was a synthetic coverage marker, not a
+provider source. It is excluded from source counts and replaced by per-campaign
+brief availability. Source reads older than 24 hours are marked stale; failed
+reads retain their original successful timestamps. Refresh never refreshes these
+timestamps. A real GitHub discovery/API failure remains a named unavailable source.
+
+Campaign discovery is a read-only local/server-side snapshot step, not an
+unauthenticated browser call into the private repository:
+
+```sh
+node scripts/enrich-campaign-briefs.mjs /outside/repo/input.json /outside/repo/new-output.json
+```
+
+Use `GH_TOKEN` or `GITHUB_TOKEN` from the execution environment when needed. The
+script resolves `lady-fitness-core/main`, pins its SHA, discovers only matching
+`MD campaigns/LF_CAMPAIGN_<SLUG>/LF_CAMPAIGN_<SLUG>_BRIEF.md` paths, reads briefs,
+and joins only an exact Business Campaign ID or explicit storage slug/link.
+It never falls back to Drive Markdown, writes canonical files, updates Sheets,
+or changes campaign approval. Previous successful briefs remain stale on read
+failure. Output must be a new file outside this public repo (mode 0600). Scripts,
+provider payloads and private snapshots are excluded from the public build.
+Import the enriched snapshot explicitly; service connection still only supplies
+map/event data. Old imports need enrichment to include current canonical briefs.
+
+An available asset link means recorded evidence, not verified publication or
+anonymous file access. Drive media is linked rather than automatically embedded.
+Post-specific objectives missing in the output register remain TBD; a campaign
+objective is not silently substituted. New-product dates are shown only when the
+source supports them; unknown dates do not establish a newest-first business fact.
