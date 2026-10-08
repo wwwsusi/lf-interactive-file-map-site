@@ -4,7 +4,7 @@ let savedTheme='dark';try{savedTheme=localStorage.getItem('lf-control-center-the
 applyTheme(savedTheme==='light'?'light':'dark');
 themeButton.onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(next);try{localStorage.setItem('lf-control-center-theme',next);}catch{}};
 import {parseSnapshot} from './snapshot.mjs';
-import {createDashboard} from './dashboard.mjs?v=20261008-live-v6';
+import {createDashboard} from './dashboard.mjs?v=20261008-manual-v7';
 import {AREAS,normalizeGraph,ActivityStore,safeUrl,matchesSearch} from './model.mjs';
 const $=id=>document.getElementById(id), ns='http://www.w3.org/2000/svg';
 let graph=normalizeGraph({nodes:[],edges:[],coverage:{}}), demoGraph=null, selected=null, selectedEdge=null, page=0,zoom=1,dx=0,dy=0;
@@ -123,7 +123,7 @@ async function pollEvents(){
  }catch(error){if(closed||epoch!==connectionEpoch)return;eventStreamStale=true;render();$('tracking-scope').textContent='História udalostí nedostupná: '+error.message+' · inventár môže zostať pripojený.';}
  if(!closed)eventTimer=setTimeout(pollEvents,5000);
 }
-function attach(){if(closed)return;const epoch=connectionEpoch;if(transport==='poll'){if(!eventPolling)$('tracking-scope').textContent='Pokrytie: read-only inventár, obnova každých 60 sekúnd. Čerstvosť zdrojov určuje čas snapshotu. Globálne operácie sa nesledujú.';retry=setTimeout(async()=>{try{const results=await Promise.allSettled([inventory(),liveReport()]);if(closed||epoch!==connectionEpoch)return;const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason;status('Pripojené','connected');}catch(e){if(closed||epoch!==connectionEpoch)return;$('notice').textContent=e.message;status('Obnova dát zlyhala','reconnecting');}if(!closed&&epoch===connectionEpoch)attach();},60000);return;}stream?.close();status('Pripájam…','reconnecting');stream=new EventSource(endpoint+'/api/events?after='+lastSequence,{withCredentials:true});
+function attach(){if(closed)return;const epoch=connectionEpoch;if(transport==='poll'){if(!eventPolling)$('tracking-scope').textContent='Pokrytie: read-only inventár, obnova každých 60 sekúnd. Čerstvosť zdrojov určuje čas snapshotu. Globálne operácie sa nesledujú.';retry=setTimeout(async()=>{try{const results=await Promise.allSettled([inventory()]);if(closed||epoch!==connectionEpoch)return;const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason;status('Pripojené','connected');}catch(e){if(closed||epoch!==connectionEpoch)return;$('notice').textContent=e.message;status('Obnova dát zlyhala','reconnecting');}if(!closed&&epoch===connectionEpoch)attach();},60000);return;}stream?.close();status('Pripájam…','reconnecting');stream=new EventSource(endpoint+'/api/events?after='+lastSequence,{withCredentials:true});
  stream.addEventListener('hello',e=>{status('Pripojené','connected');const info=JSON.parse(e.data);$('tracking-scope').textContent='Pokrytie: '+info.scope;});
  stream.addEventListener('operation',e=>{if(closed||epoch!==connectionEpoch)return;lastSequence=Number(e.lastEventId)||lastSequence;try{acceptEvent(JSON.parse(e.data));}catch(error){$('notice').textContent='Neplatná udalosť odmietnutá: '+error.message;}});
  stream.addEventListener('inventory',()=>inventory().catch(e=>$('notice').textContent=e.message));
