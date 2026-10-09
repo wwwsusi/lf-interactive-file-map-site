@@ -1,7 +1,7 @@
 import {renderOperational,operationalViews,WORK,displayDate} from './operational.mjs?v=20261009-supabase-v2';
 import {mergeLiveReport} from './live-report.mjs?v=20261009-supabase-v2';
 import {SECTIONS,DashboardState,views,freshness,publicationLabel,taskLabel,dateValue,metrics,campaignCoverage,ideaBucket} from './dashboard-model.mjs?v=20261009-supabase-v2';
-import {statusTone,campaignGroup,dataStatus,evidenceFor,postDisplay,taskCategory,groupTasksByCategory,latestNowItems,nowAddedDate,itemTitle} from './reporting.mjs?v=20261009-supabase-v2';
+import {enhanceTable,statusTone,campaignGroup,dataStatus,evidenceFor,postDisplay,taskCategory,groupTasksByCategory,latestNowItems,nowAddedDate,itemTitle} from './reporting.mjs?v=20261009-supabase-v2';
 import {snapshotAge} from './snapshot.mjs';
 import {demoProjection} from './dashboard-demo.mjs';
 import {safeUrl,searchText} from './model.mjs';
@@ -58,7 +58,7 @@ export function createDashboard({focusMap,refreshLive}){
  }
  function statusBadge(value,parent){const badge=make('span',String(value||'TBD'),parent,'dash-badge');badge.dataset.tone=statusTone(value);return badge;}
  function sectionHeading(title,parent,note=''){const box=make('section',null,parent,'dash-group');box.dataset.title=title;make('h3',title,box);if(note)make('p',note,box,'section-note');return box;}
- function tableShell(title,columns,parent,note=''){const box=sectionHeading(title,parent,note),wrap=make('div',null,box,'table-scroll'),table=make('table',null,wrap,'report-table');table.setAttribute('aria-label',title);const row=make('tr',null,make('thead',null,table));for(const col of columns)make('th',col,row).scope='col';return {box,body:make('tbody',null,table)};}
+ function tableShell(title,columns,parent,note=''){const box=sectionHeading(title,parent,note),wrap=make('div',null,box,'table-scroll'),table=make('table',null,wrap,'report-table');table.setAttribute('aria-label',title);const head=make('thead',null,table),body=make('tbody',null,table);enhanceTable({table,head,body,columns,box,make,action});return {box,body};}
  function servicesTable(title,items,parent){const {box,body}=tableShell(title,['Názov','Popis','Cena','Lifecycle','Aktuálne dostupná'],parent);for(const item of items){const row=make('tr',null,body),name=make('td',null,row);const button=action(itemTitle(item),()=>detail(item),name);button.className='table-title';button.title=item.id;make('small',item.id,name,'table-id');make('td',item.fields.summary||'TBD',row,'description-cell');make('td',item.fields.price||item.fields.proposed_price||'TBD',row,'price-cell');statusBadge(item.fields.lifecycle||item.fields.evidence_status,make('td',null,row));make('td',item.fields.availability||'TBD',row);if(item.conflicts.length)make('small','Konflikt evidencie',name,'conflict-label');}if(!items.length)make('p','Žiadne položky v načítanom rozsahu.',box,'empty-row');}
  function taskRows(title,items,parent,limit=null,showAll=false,{byCategory=false,addedDates=false}={}){
   const box=sectionHeading(title,parent),selected=limit?items.slice(0,limit):items;
