@@ -18,7 +18,7 @@ export function validateStatusCatalog(data){
  if(data?.origin!=='supabase')return;
  const c=data.status_catalog;if(!c||!['colors','domains','definitions','bindings','transitions'].every(k=>Array.isArray(c[k])))throw Error('Chýba register stavov z DB.');
  const colors=new Set(c.colors.map(r=>r.color_key)),domains=new Set(c.domains.map(r=>r.domain)),seen=new Set();
- for(const s of c.definitions){const key=s.domain+':'+s.code;if(seen.has(key)||!domains.has(s.domain)||!colors.has(s.color_key)||!['neutral','warning','info','danger','success'].includes(s.color_key)||typeof s.label_sk!=='string'||!Number.isFinite(s.sort_order)||typeof s.is_terminal!=='boolean')throw Error('Neplatná definícia stavu z DB.');seen.add(key);}
+ for(const s of c.definitions){const key=s.domain+':'+s.code;if(seen.has(key)||!domains.has(s.domain)||!colors.has(s.color_key)||!['neutral','warning','info','danger','success','retired','none'].includes(s.color_key)||typeof s.label_sk!=='string'||!Number.isFinite(s.sort_order)||typeof s.is_terminal!=='boolean')throw Error('Neplatná definícia stavu z DB.');seen.add(key);}
 }
 
 export function statusDomain(item,field){const tables={task:'management_tasks',service:'services',product:'products',campaign:'campaigns'};return catalog?.bindings?.find(b=>b.table_name===(item.provenance?.anchor||tables[item.kind])&&b.column_name===(field==='task_status'?'status':field))?.domain;}
