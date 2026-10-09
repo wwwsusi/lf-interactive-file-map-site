@@ -1,3 +1,4 @@
+import {validateStatusCatalog} from './status-model.mjs?v=20261009-status-registry';
 // Business projections are separate from the graph; explicit imports persist locally.
 export const SECTIONS=[['overview','Prehľad'],['tasks','Úlohy'],['calendar','Kalendár'],['offers','Služby'],['products','Produkty'],['campaigns','Kampane'],['now','Management'],['sources','Kvalita dát'],['map','Súbory']];
 export const TASK_STATUS=Object.freeze({'to-do':'NEZAČATÉ',preparing:'V PRÍPRAVE',running:'PREBIEHA','NEZAČATÉ':'NEZAČATÉ','V PRÍPRAVE':'V PRÍPRAVE','PREBIEHA':'PREBIEHA'});
@@ -17,6 +18,7 @@ export function publicationLabel(item){
  return p;
 }
 export function validateProjection(input){
+ validateStatusCatalog(input);
  if(!input||input.schema_version!==1||!Array.isArray(input.sources)||!Array.isArray(input.items)||input.items.length>10000||input.sources.length>300)throw Error('Neplatný dashboard kontrakt.');
  const sourceIds=new Set(),ids=new Set();const checked=structuredClone(input),merged=[];
  for(const s of input.sources){if(!s.id||sourceIds.has(s.id)||!['ok','error','missing','blocked'].includes(s.status))throw Error('Neplatná evidencia zdroja.');sourceIds.add(s.id);}
@@ -49,3 +51,4 @@ export function campaignCoverage(data){
  return {briefs:briefs.length,missing:missing.map(i=>i.id),unavailable:briefs.filter(s=>s.status!=='ok').map(s=>s.id)};
 }
 export function ideaBucket(item){return ['FOCUS NOW','LATER','PARKED'].includes(item.fields.reporting_bucket)?item.fields.reporting_bucket:'UNCLASSIFIED';}
+
