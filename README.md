@@ -1,29 +1,35 @@
-# LF file-map frontend — legacy main / offline analysis
+# Lady Fitness Control Center V2 — frontend source
 
-## Operational disposition
+This repository owns the V2 frontend source. The private backend serves a checksum-verified, immutable source revision on the same HTTPS origin as /api/*.
 
-The owner confirmed this GitHub Pages dashboard and the manual Markdown current-state CLI tools are no longer used for Lady Fitness operations. Current operations use the private Supabase-backed V2 application. This `main` branch is retained for explicitly labelled offline snapshot analysis and technical file-map/event functionality; it is not a supported live business dashboard.
+## Source consolidation — prepared, not merged or deployed
 
-The Pages publication workflow is removed. **One owner setting remains:** repository Settings → Pages → Unpublish site. Removing a workflow alone does not unpublish an existing deployment. Do not re-enable automatic Pages publication or restore a legacy live report caller. No public redirect or private deployment URL is added here.
+This branch is based on main `b91b002bc4eb0314b2281fbf61a5ae2d3dbbc510` and restores the frontend implementation from the backend's observed immutable source pin `805a00aef1b3057e9bda4ef79d738d88ed24021a`. The older `codex/control-center-supabase-v2` branch is not the production baseline.
 
-The immutable production V2 frontend source is maintained separately and consumed through the backend checksum manifest. This cleanup does not modify that source branch or the manifest.
+The backend `service/frontend-pin.json` remains unchanged. Merging this frontend consolidation does not change the backend's deployed shell. Future releases need a separately reviewed pin update and explicit deployment authorization.
 
-## Removed tools and retained dependencies
+## Runtime and data boundaries
 
-`scripts/refresh-now.mjs` and `scripts/enrich-campaign-briefs.mjs` are removed from active tooling. Git history preserves their original implementation. They must not be used to obtain current business facts.
+- Current operational facts come from the authenticated `/api/dashboard` Supabase projection.
+- Browser → same-origin backend → Supabase. No privileged database credentials belong in the frontend.
+- Existing login, server session restore, logout, dashboard refresh, validation and freshness/error behavior are retained from the immutable source pin.
+- Explicit imports are historical SNAPSHOT data; DEMO uses synthetic data. They never become canonical current state.
+- Public builds contain an empty graph, allowlisted code and licensed fonts. Do not commit private business payloads or QA fixtures.
+- Business status/lifecycle/category semantics belong to the backend DTO and registry. Source code is not a business master.
 
-`scripts/lib/now-ingestion.mjs` and `scripts/lib/campaign-ingestion.mjs` remain only as offline/historical parsers with existing synthetic tests. Shared browser validation, reporting, graph, import and event modules remain. Offline parsing does not confer current-state authority on Markdown or Sheets.
+## Retired paths remain retired
 
-## Explicit offline import
+The Pages publication workflow and current-state Markdown CLI entrypoints `scripts/refresh-now.mjs` / `scripts/enrich-campaign-briefs.mjs` remain removed. Do not restore `/api/report`, Markdown/Sheets current-state runtime or GitHub Pages reporting. Shared historical parser libraries/tests remain offline-only.
 
-Import a user-prepared JSON snapshot via Importovať snapshot. The snapshot is derived read-only evidence, labelled SNAPSHOT, never current operational truth. A graph-only import supplies technical inventory, not business facts. Imported records retain provenance, errors and original read times. Obnoviť report recomputes the snapshot without refreshing its source timestamps.
+The previous owner action to unpublish any existing Pages site is not re-verified here. No Pages setting, backend pin, deployment, schema or auth model is changed by this branch. Earlier documentation remains available in Git history and dated audit evidence.
 
-Explicit imports are stored only in this browser's IndexedDB and removed through Vymazať uložený snapshot; use a trusted device. Synthetic demo is separate. No private snapshots, credentials or provider data may be committed or uploaded as public artifacts. The same-origin production profile does not silently restore imported business snapshots.
+## Validation
 
-The independent secure-service connection may supply technical inventory and registered-operation history. The removed legacy live business endpoint is not called from this branch. Status, lifecycle, approval and publication remain separate; unknown values stay unknown.
+Node.js 22+: `npm run check`, `npm run build`.
+Optional synthetic browser QA: `python scripts/qa-session-restore.py` and `python scripts/qa-supabase-browser.py`; inspect their required arguments before running.
 
-## Build and validation
+Consolidation readback and source hash checks are documented in [migration evidence](Audit%20Results/2026-10-09-v2-main-source-consolidation.md). Runtime tests and browser QA must pass before this draft is made ready; the preparation environment was unavailable.
 
-Node.js 22+: `npm run check`, `npm run build`. The explicit code/font allowlist generates an empty public graph and synthetic demo only. The PR QA workflow remains; Pages publication is decommissioned. Inter/Oswald licence files remain bundled. No database, auth/session or business-data change is included.
+## Follow-up
 
-Dated audit evidence remains historical, not executable release instructions.
+LF-TASK-024 UX NOW implementation is deferred until the baseline conflict is resolved. This consolidation includes no UX redesign, CRM, API/schema expansion, merge or deployment and creates no second task register.

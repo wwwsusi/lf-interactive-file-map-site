@@ -28,3 +28,9 @@ dialog,#dashboard-detail{background:var(--paper);color:var(--ink);border:1px sol
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 .now-category + .now-category{margin-top:1.25rem}.now-category-heading{margin:.4rem 0 .65rem;padding-bottom:.45rem;border-bottom:1px solid var(--line);font-size:1rem}.now-category .task-list{display:grid;gap:.6rem}
+
+/* Semantic registry categories: retired is brown; none uses plain text. */
+[data-tone=retired]{--tone:#805333;--tone-bg:#f2e5d9}
+[data-tone=none]{--tone:var(--ink);--tone-bg:transparent}
+.dash-badge[data-tone=none]{background:transparent;padding:0;font-weight:inherit}
+.dash-card[data-tone=none],.task-row[data-tone=none]{border-left-color:var(--line)}
