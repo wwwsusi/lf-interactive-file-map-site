@@ -5,11 +5,11 @@ export function parseSnapshot(raw){
  if(!raw||typeof raw!=='object')throw Error('Neplatný snapshot.');
  if(raw.format==='lf-operating-snapshot'){
   if(raw.version!==1)throw Error('Nepodporovaná verzia snapshotu.');
-  const graph=raw.graph?normalizeGraph(raw.graph):null,dashboard=raw.dashboard?validateProjection(raw.dashboard):null;
+  const graph=raw.graph?normalizeGraph(raw.graph):null,dashboard=raw.dashboard?{...validateProjection(raw.dashboard),mode:"SNAPSHOT"}:null;
   if(!graph&&!dashboard)throw Error('Snapshot neobsahuje graf ani dashboard.');
   return {graph,dashboard};
  }
- if(Array.isArray(raw.sources)&&Array.isArray(raw.items))return {graph:null,dashboard:validateProjection(raw)};
+ if(Array.isArray(raw.sources)&&Array.isArray(raw.items))return {graph:null,dashboard:{...validateProjection(raw),mode:"SNAPSHOT"}};
  return {graph:normalizeGraph(raw),dashboard:null};
 }
 export function snapshotAge(value,now=Date.now()){

@@ -1,12 +1,15 @@
+import {connectionProfile,resolveEndpoint,viewerOptions} from './connection.mjs';
 const themeButton=document.getElementById('theme-toggle');
 function applyTheme(theme){document.documentElement.dataset.theme=theme;themeButton.textContent=theme==='dark'?'☀ Svetlý režim':'☾ Tmavý režim';themeButton.setAttribute('aria-pressed',String(theme==='dark'));}
 let savedTheme='dark';try{savedTheme=localStorage.getItem('lf-control-center-theme')||'dark';}catch{}
 applyTheme(savedTheme==='light'?'light':'dark');
 themeButton.onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(next);try{localStorage.setItem('lf-control-center-theme',next);}catch{}};
 import {parseSnapshot} from './snapshot.mjs';
-import {createDashboard} from './dashboard.mjs?v=20261008-manual-v7';
+import {createDashboard} from './dashboard.mjs?v=20261009-same-origin-v1';
 import {AREAS,normalizeGraph,ActivityStore,safeUrl,matchesSearch} from './model.mjs';
 const $=id=>document.getElementById(id), ns='http://www.w3.org/2000/svg';
+$('connection').textContent='Pripájam…';
+const serviceConfig=await(await fetch('./config.json',{cache:'no-store'})).json(),serviceProfile=connectionProfile(serviceConfig);
 let graph=normalizeGraph({nodes:[],edges:[],coverage:{}}), demoGraph=null, selected=null, selectedEdge=null, page=0,zoom=1,dx=0,dy=0;
 let endpoint='',stream=null,retry=null,closed=true,lastSequence=0,lastSync=null,sessionToken='',transport='sse',eventPolling=false,eventTimer=null,eventCursor=null,connectionEpoch=0,historyCatchingUp=false,eventStreamStale=false;
 let importedAt=null,importFilename='',storageNote='',persisted=false;
@@ -107,12 +110,12 @@ function timeline(){const list=$('events');list.replaceChildren();for(const e of
 function eventDetail(e){for(const id of ['search','source','type'])$(id).value='';$('archive').checked=true;selected=e.source_id;selectedEdge=null;page=0;render();const box=$('detail');box.replaceChildren();el('h2',e.observation==='sync_detected'?'Zmena zistená synchronizáciou':'Detail aktivity',box);for(const k of ['timestamp','operation','status','actor_id','source_id','target_id'])el('p',k+': '+e[k],box);el('p','Readback zápisu: '+(e.readback_verified?'OVERENÝ':'NEOVERENÝ / N/A'),box);proof(e.evidence,box);if(e.readback_evidence)proof(e.readback_evidence,box);if(e.error)proof(e.error,box);}
 function acceptEvent(e,replay=false){const store=e.demo?demo:real;if(!store.add(e))return;if(e.status!=='started'&&!replay){resultFlows.set(e.operation_id,{event:{...e,demo:Boolean(e.demo)},until:Date.now()+2300});for(const id of[e.source_id,e.target_id])flashes.set(id,{status:e.status,until:Date.now()+2300});setTimeout(()=>render(),2400);}render();}
 function stop(preserveReport=false){dashboard.setLiveConnected(false);connectionEpoch++;closed=true;sessionToken='';clearTimeout(retry);clearTimeout(eventTimer);stream?.close();stream=null;if(!preserveReport)dashboard.clear();for(const store of[real,demo]){store.history=[];store.active.clear();store.seen.clear();store.terminal.clear();}demoGraph=null;flashes.clear();resultFlows.clear();lastSequence=0;lastSync=null;$('last-sync').textContent='Posledná synchronizácia: —';$('demo-mode').checked=false;setGraph({nodes:[],edges:[],coverage:{scope:'Odhlásené; interné údaje boli vyčistené.'}});status('Odpojené');$('tracking-scope').textContent='Pokrytie: odpojené; interné údaje vyčistené.';}
-async function inventory(){const epoch=connectionEpoch;const r=await fetch(endpoint+'/api/inventory',{credentials:sessionToken?'omit':'include',headers:sessionToken?{Authorization:'Bearer '+sessionToken}:{},cache:'no-store',signal:AbortSignal.timeout(20000)});if(epoch!==connectionEpoch)return;if(!r.ok){if(r.status===401){stop();throw Error('Prihlásenie vypršalo. Pripoj službu znova.');}throw Error('Inventár HTTP '+r.status);}const data=await r.json();if(epoch!==connectionEpoch)return;setGraph(data);lastSync=new Date().toISOString();$('last-sync').textContent='Posledná synchronizácia: '+new Date(lastSync).toLocaleString('sk-SK',{timeZone:'Europe/Prague'});}
+async function inventory(){const epoch=connectionEpoch;const r=await fetch(endpoint+'/api/inventory',{...viewerOptions(serviceProfile,sessionToken),cache:'no-store',signal:AbortSignal.timeout(20000)});if(epoch!==connectionEpoch)return;if(!r.ok){if(r.status===401){stop(true);throw Error('Prihlásenie vypršalo. Pripoj službu znova.');}throw Error('Inventár HTTP '+r.status);}const data=await r.json();if(epoch!==connectionEpoch)return;setGraph(data);lastSync=new Date().toISOString();$('last-sync').textContent='Posledná synchronizácia: '+new Date(lastSync).toLocaleString('sk-SK',{timeZone:'Europe/Prague'});}
 async function pollEvents(){
  if(closed||!eventPolling)return;const epoch=connectionEpoch;
  try{
-  const response=await fetch(endpoint+'/api/events?after='+lastSequence,{headers:{Authorization:'Bearer '+sessionToken},cache:'no-store',signal:AbortSignal.timeout(15000)});
-  if(epoch!==connectionEpoch||closed)return;if(response.status===401){stop();throw Error('Prihlásenie vypršalo. Pripoj službu znova.');}if(!response.ok)throw Error('História udalostí HTTP '+response.status);
+  const response=await fetch(endpoint+'/api/events?after='+lastSequence,{...viewerOptions(serviceProfile,sessionToken),cache:'no-store',signal:AbortSignal.timeout(15000)});
+  if(epoch!==connectionEpoch||closed)return;if(response.status===401){stop(true);throw Error('Prihlásenie vypršalo. Pripoj službu znova.');}if(!response.ok)throw Error('História udalostí HTTP '+response.status);
   const data=await response.json();if(closed||epoch!==connectionEpoch)return;if(!Array.isArray(data.records))throw Error('Neplatná história');
   const replay=eventCursor===null||data.reset;historyCatchingUp=lastSequence<data.last;eventStreamStale=false;
   if(data.reset){real.history=[];real.active.clear();real.seen.clear();real.terminal.clear();lastSequence=0;}
@@ -132,10 +135,33 @@ function attach(){if(closed)return;const epoch=connectionEpoch;if(transport==='p
  stream.onerror=()=>{status('Obnovujem spojenie…','reconnecting');stream.close();retry=setTimeout(attach,3000);};
 }
 const dashboard=createDashboard({refreshLive:()=>liveReport(),focusMap(fileId,sourceId,url){for(const id of ['search','source','type'])$(id).value='';$('archive').checked=true;const node=graph.nodes.find(n=>n.id===sourceId||n.id==='drive:'+fileId||n.url===url||n.provenance?.file_id===fileId);if(node)select(node.id);else{$('search').value=fileId||sourceId;render();$('notice').textContent='Zdroj nie je v načítanom grafe; canonical odkaz zostáva v detaile dashboardu.';}}});
-async function liveReport(){throw Error('Legacy live dashboard je vyradený. Táto vetva podporuje iba označený offline snapshot a technickú mapu.');}
-const endpointSafe=value=>{const u=new URL(value);const loop=['127.0.0.1','localhost','[::1]'].includes(u.hostname);if(u.username||u.password||u.search||u.hash||(!loop&&u.protocol!=='https:')||!['http:','https:'].includes(u.protocol))throw Error('Služba potrebuje HTTPS; HTTP je povolené iba na localhost.');return u.origin;};
+async function liveReport({restore=false}={}){
+ const epoch=connectionEpoch;if(closed&&!restore)return;
+ try{
+  const r=await fetch(endpoint+'/api/dashboard',{credentials:'include',cache:'no-store',signal:AbortSignal.timeout(25000)});
+  if(epoch!==connectionEpoch)return;
+  if(r.status===401||r.status===403){
+   if(restore){stop();return false;}
+   throw Error('Dashboard prihlásenie vypršalo alebo prehliadač blokuje session cookie. Pripoj službu znova.');
+  }
+  if(!r.ok)throw Error('Supabase dashboard HTTP '+r.status+' — posledné úspešné údaje zostávajú zachované.');
+  const data=await r.json();if(epoch!==connectionEpoch)return;
+  if(restore){closed=false;dashboard.setLiveConnected(true);}
+  if(!closed)dashboard.acceptLive(data);
+  if(restore)status('Pripojené','connected');
+  return true;
+ }catch(e){
+  if(epoch===connectionEpoch){
+   if(restore){closed=true;dashboard.clear();status('Obnova dát zlyhala','reconnecting');}
+   if(restore||!closed)dashboard.liveError(e.message);
+  }
+  throw e;
+ }
+}
+document.addEventListener('lf-session-expired',()=>{stop();$('notice').textContent='Prihlásenie vypršalo.';});
+const endpointSafe=value=>resolveEndpoint(value,serviceProfile);
 $('connect').onclick=()=>$('connection-dialog').showModal();$('cancel').onclick=()=>$('connection-dialog').close();$('disconnect').onclick=()=>{stop();fetch(endpoint+'/api/logout',{method:'POST',credentials:'include'}).catch(()=>{});$('connection-dialog').close();};
-$('connection-form').onsubmit=async e=>{e.preventDefault();const attemptEpoch=connectionEpoch;$('login-error').textContent='';try{const next=endpointSafe($('endpoint').value);const r=await fetch(next+'/api/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('password').value})});$('password').value='';if(attemptEpoch!==connectionEpoch)return;if(!r.ok)throw Error('Prihlásenie zlyhalo: HTTP '+r.status);const login=await r.json();if(attemptEpoch!==connectionEpoch)return;stop(true);sessionToken=login.token||'';transport=login.transport==='poll'?'poll':'sse';endpoint=next;lastSequence=0;eventCursor=null;eventPolling=login.eventTransport==='poll';closed=false;dashboard.setLiveConnected(true);await Promise.allSettled([inventory(),liveReport()]);if(closed)return;status('Pripojené','connected');attach();if(eventPolling)pollEvents();$('connection-dialog').close();}catch(err){$('password').value='';$('login-error').textContent=err.message;}};
+$('connection-form').onsubmit=async e=>{e.preventDefault();const attemptEpoch=connectionEpoch;$('login-error').textContent='';try{const next=endpointSafe($('endpoint').value);const r=await fetch(next+'/api/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('password').value})});$('password').value='';if(attemptEpoch!==connectionEpoch)return;if(!r.ok)throw Error('Prihlásenie zlyhalo: HTTP '+r.status);const login=await r.json();if(attemptEpoch!==connectionEpoch)return;stop(true);sessionToken=serviceProfile.sameOrigin?'':login.token||'';transport=login.transport==='poll'?'poll':'sse';endpoint=next;lastSequence=0;eventCursor=null;eventPolling=login.eventTransport==='poll';closed=false;dashboard.setLiveConnected(true);await Promise.allSettled([inventory(),liveReport()]);if(closed)return;status('Pripojené','connected');attach();if(eventPolling)pollEvents();$('connection-dialog').close();}catch(err){$('password').value='';$('login-error').textContent=err.message;}};
 $('import').onchange=async()=>{
  const f=$('import').files[0];if(!f)return;
  try{if(f.size>25*1024*1024)throw Error('Maximálne 25 MB.');const next=parseSnapshot(JSON.parse(await f.text()));const stamp=new Date().toISOString();$('forget').disabled=true;
@@ -153,9 +179,12 @@ $('demo').onclick=()=>{
  const read='demo-read-'+crypto.randomUUID(),write='demo-write-'+crypto.randomUUID();const emit=(op,status,id,source,target,error=null)=>acceptEvent({event_id:crypto.randomUUID(),operation_id:id,timestamp:new Date().toISOString(),actor_id:'actor:demo',operation:op,status,source_id:source,target_id:target,evidence:{summary:'Syntetická demo operácia; nie business aktivita.'},error,demo:true});
  emit('read','started',read,'github:demo:README.md','actor:demo');emit('write','started',write,'actor:demo','drive:demo-sheet');setTimeout(()=>emit('read','completed',read,'github:demo:README.md','actor:demo'),2400);setTimeout(()=>emit('write','failed',write,'actor:demo','drive:demo-sheet','DEMO: simulovaná chyba prístupu.'),3900);
 };
-try{const cached=await localGraph('get');if(cached){const next=parseSnapshot({format:'lf-operating-snapshot',version:1,graph:cached.graph,dashboard:cached.dashboard});if(!Number.isFinite(Date.parse(cached.importedAt)))throw Error('Neplatný dátum uloženého importu.');importedAt=cached.importedAt;importFilename=cached.filename||'snapshot.json';persisted=true;setGraph(next.graph||{nodes:[],edges:[]});dashboard.importSnapshot(next.dashboard,{importedAt,filename:importFilename,persisted,graphOnly:!next.dashboard});}else setGraph(await(await fetch('./data/graph.json')).json());}catch(e){storageNote='Lokálne uložený snapshot nie je dostupný; importuj súbor.';try{setGraph(await(await fetch('./data/graph.json')).json());}catch{render();}}
-try{const config=await(await fetch('./config.json')).json();$('tracking-scope').textContent=config.scope;if(config.eventServiceUrl){$('endpoint').value=endpointSafe(config.eventServiceUrl);$('connect').hidden=false;}else if(['127.0.0.1','localhost'].includes(location.hostname))$('endpoint').value=location.origin;}catch{$('tracking-scope').textContent='Živé napojenie nie je dostupné.';}
+try{const cached=serviceProfile.sameOrigin?null:await localGraph('get');if(cached){const next=parseSnapshot({format:'lf-operating-snapshot',version:1,graph:cached.graph,dashboard:cached.dashboard});if(!Number.isFinite(Date.parse(cached.importedAt)))throw Error('Neplatný dátum uloženého importu.');importedAt=cached.importedAt;importFilename=cached.filename||'snapshot.json';persisted=true;setGraph(next.graph||{nodes:[],edges:[]});dashboard.importSnapshot(next.dashboard,{importedAt,filename:importFilename,persisted,graphOnly:!next.dashboard});}else setGraph(await(await fetch('./data/graph.json')).json());}catch(e){storageNote='Lokálne uložený snapshot nie je dostupný; importuj súbor.';try{setGraph(await(await fetch('./data/graph.json')).json());}catch{render();}}
+$('tracking-scope').textContent=serviceConfig.scope;if(serviceProfile.sameOrigin){$('endpoint').value=location.origin;$('endpoint').disabled=true;$('connect').hidden=false;}else if(serviceConfig.eventServiceUrl){$('endpoint').value=endpointSafe(serviceConfig.eventServiceUrl);$('connect').hidden=false;}else if(['127.0.0.1','localhost'].includes(location.hostname))$('endpoint').value=location.origin;
 // Len diagnostika pre browser QA; žiadne tajné údaje ani plné dokumenty.
 window.lfMapDiagnostics=()=>({nodes:current().nodes.length,edges:current().edges.length,active:activities().active.size,history:activities().history.length,lastSequence,lastSync,importedAt,persisted,demo:$('demo-mode').checked});
 
 window.lfDashboardDiagnostics=dashboard.diagnostics;
+
+// Restore through the canonical loader; the HttpOnly cookie stays browser-managed.
+if(serviceProfile.sameOrigin){status('Pripájam…','reconnecting');try{await liveReport({restore:true});}catch{}}else status('Odpojené');
