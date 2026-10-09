@@ -1,9 +1,0 @@
-// Server/local only; never expose credentials or private projections in the public site.
-import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {refreshNowSnapshot} from './lib/now-ingestion.mjs';
-const [input,output]=process.argv.slice(2),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');if(!input||!output)throw Error('Usage: node scripts/refresh-now.mjs private-input.json /outside/repo/new-private-output.json');
-const target=path.resolve(output),parent=fs.realpathSync(path.dirname(target));if(parent===root||parent.startsWith(root+path.sep)||fs.existsSync(target))throw Error('Use a new private output outside the public repository');
-const token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN,headers={Accept:'application/vnd.github+json',...(token?{Authorization:'Bearer '+token}:{})};
-async function get(endpoint){const r=await fetch('https://api.github.com/repos/wwwsusi/lady-fitness-core/'+endpoint,{headers});if(!r.ok)throw Error('Canonical GitHub unavailable: HTTP '+r.status);return r.json();}
-const main=await get('branches/main'),revision=main.commit.sha,p='MD files-management/01_NOW.md',file=await get('contents/'+p.split('/').map(encodeURIComponent).join('/')+'?ref='+revision);
-const source={id:'github:now',title:'Canonical 01_NOW.md',provider:'github',role:'now',status:'ok',url:'https://github.com/wwwsusi/lady-fitness-core/blob/'+revision+'/'+p.split('/').map(encodeURIComponent).join('/'),revision,content_sha:file.sha,last_success_at:new Date().toISOString()};
-const result=refreshNowSnapshot(JSON.parse(fs.readFileSync(input,'utf8')),source,Buffer.from(file.content,'base64').toString('utf8'));fs.writeFileSync(target,JSON.stringify(result,null,2),{mode:0o600,flag:'wx'});console.log('Private NOW projection refreshed from pinned GitHub main; other sources preserved.');
