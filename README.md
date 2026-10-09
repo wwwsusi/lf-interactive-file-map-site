@@ -1,126 +1,29 @@
-# LF Interactive file map — operating dashboard
+# LF file-map frontend — legacy main / offline analysis
 
-Read-only Slovak operating dashboard in the existing application. **Prehľad** is the default; **Mapa zdrojov** preserves the graph, search, filters, imports, evidence and registered-operation history. Other views: Kampane a obsah, Ponuky, Smer a nápady, Stav zdrojov.
+## Operational disposition
 
-This public repository contains code, licensed fonts, an empty graph and clearly synthetic demo data only. Business records, internal document names/URLs/IDs, original exports and credentials belong to the private service and canonical sources. Do not commit them here or upload them as public CI artifacts.
+The owner confirmed this GitHub Pages dashboard and the manual Markdown current-state CLI tools are no longer used for Lady Fitness operations. Current operations use the private Supabase-backed V2 application. This `main` branch is retained for explicitly labelled offline snapshot analysis and technical file-map/event functionality; it is not a supported live business dashboard.
 
-## Use
+The Pages publication workflow is removed. **One owner setting remains:** repository Settings → Pages → Unpublish site. Removing a workflow alone does not unpublish an existing deployment. Do not re-enable automatic Pages publication or restore a legacy live report caller. No public redirect or private deployment URL is added here.
 
-Import a private JSON snapshot using **Importovať snapshot** on the overview. No Google OAuth, API client credentials or provider requests are required by this browser. **Obnoviť report** recomputes the imported projection only and never updates source or import timestamps. New canonical facts require a newly prepared and imported snapshot. Source snapshot time/age, successful reads and local import time are distinct; missing dates stay unknown.
+The immutable production V2 frontend source is maintained separately and consumed through the backend checksum manifest. This cleanup does not modify that source branch or the manifest.
 
-Import accepts the existing graph JSON, dashboard projection v1, or the combined format below. A graph-only import remains a file inventory and cannot populate business facts. Explicit user imports (including business projections) are saved only in this browser's IndexedDB, never uploaded; **Vymazať uložený snapshot** removes that copy. Do not import sensitive files on a shared device. No private snapshots are bundled or committed.
+## Removed tools and retained dependencies
 
-The configured secure service remains optional for the map and registered-operation history. Login/polling do not request `/api/dashboard`. Connecting retains the explicitly imported report; disconnecting clears displayed dashboard, details, graph and history; an explicitly saved snapshot remains until deleted and can be restored by reload. Home / Reset clears map filters and returns to Prehľad. Synthetic demo is separate and never persisted.
+`scripts/refresh-now.mjs` and `scripts/enrich-campaign-briefs.mjs` are removed from active tooling. Git history preserves their original implementation. They must not be used to obtain current business facts.
 
-## Ownership and semantics
+`scripts/lib/now-ingestion.mjs` and `scripts/lib/campaign-ingestion.mjs` remain only as offline/historical parsers with existing synthetic tests. Shared browser validation, reporting, graph, import and event modules remain. Offline parsing does not confer current-state authority on Markdown or Sheets.
 
-| Projection | Canonical owner |
-|---|---|
-| Central operations, priority, task status, next step | Single canonical operations list; next steps and priorities are views of the same items |
-| Current campaign detail and local pending actions | Campaign brief |
-| Global relationships, assets, approval/publication evidence | Creative register |
-| Services, current price and availability | Services register |
-| Retail product facts and current price | Product catalogue |
-| Retail candidates | Proposals tab; never promoted to approved automatically |
-| Strategic direction and open questions | Relevant thematic owner; summaries link back |
-| Commit/implementation evidence | GitHub; never a substitute for business facts |
+## Explicit offline import
 
-Verified task mapping: `to-do` → `NEZAČATÉ`; `preparing` → `V PRÍPRAVE`; `running` → `PREBIEHA`. This mapping applies only to task status. Lifecycle, Proposed/Executed placement, creative state, approval and publication are separate dimensions.
+Import a user-prepared JSON snapshot via Importovať snapshot. The snapshot is derived read-only evidence, labelled SNAPSHOT, never current operational truth. A graph-only import supplies technical inventory, not business facts. Imported records retain provenance, errors and original read times. Obnoviť report recomputes the snapshot without refreshing its source timestamps.
 
-`APPROVED` does not imply publication; placement does not imply either. Reported publication without explicit platform verification and a publication link displays **Publikovanie oznámené · platformovo neoverené**. A commit on main does not verify deployment. Unknown dates, owners, prices and metrics stay TBD. Relative dates remain source text, never inferred calendar dates.
+Explicit imports are stored only in this browser's IndexedDB and removed through Vymazať uložený snapshot; use a trusted device. Synthetic demo is separate. No private snapshots, credentials or provider data may be committed or uploaded as public artifacts. The same-origin production profile does not silently restore imported business snapshots.
 
-Records join only through stable business IDs and file IDs. Missing IDs use labelled derived source anchors; changes to a source's title can change that anchor. No name matching or row-number joins. Conflicting values retain both sources; no newest-timestamp resolution.
+The independent secure-service connection may supply technical inventory and registered-operation history. The removed legacy live business endpoint is not called from this branch. Status, lifecycle, approval and publication remain separate; unknown values stay unknown.
 
-## Offline architecture and import contract
+## Build and validation
 
-Canonical sources → explicit read-only export through an authorized tool → private snapshot → validated user import → browser-only dashboard. The export is derived evidence, never a second editable business master. An export may be partial and must preserve source errors, read times, provenance and conflicts. Do not infer campaign facts from graph names or links.
+Node.js 22+: `npm run check`, `npm run build`. The explicit code/font allowlist generates an empty public graph and synthetic demo only. The PR QA workflow remains; Pages publication is decommissioned. Inter/Oswald licence files remain bundled. No database, auth/session or business-data change is included.
 
-Combined snapshot JSON:
-
-```json
-{"format":"lf-operating-snapshot","version":1,"graph":{"nodes":[],"edges":[]},"dashboard":{"schema_version":1,"generated_at":null,"sources":[],"items":[]}}
-```
-
-Either `graph` or `dashboard` may be omitted, but not both. Old graph-only imports remain supported. The frontend never generates a fake business projection from inventory. Prepare updated private exports separately; do not commit/upload provider data as public CI artifacts.
-
-Dashboard JSON v1:
-
-```json
-{
-  "schema_version": 1,
-  "generated_at": "2026-01-01T00:00:00Z",
-  "sources": [{"id":"synthetic-source","title":"DEMO source","status":"ok","last_success_at":"2026-01-01T00:00:00Z","modified_at":null,"url":null}],
-  "items": [{"id":"synthetic-item","kind":"task","title":"DEMO task","source_id":"synthetic-source","fields":{"priority":"P0","task_status":"to-do","next_step":"DEMO step"},"related_ids":[],"links":[],"conflicts":[],"provenance":{"owner":"DEMO","anchor":"synthetic-anchor","identity":"synthetic"}}]
-}
-```
-
-Kinds: task, campaign, output, asset, service, product, idea, direction, decision, change. Source states: ok/error/missing/blocked. Timestamps distinguish document modification, successful provider read and projection assembly. Conflicts contain a field plus source/value pairs. Fields preserve source uncertainty. Known headers/identities are validated; schema changes produce an error. Imports are read-only. No editing or manual business overrides.
-
-Brand: adult canonical pink/navy, white, pastel and neutral; locally hosted Inter for UI and Oswald for display headings. Font copyright and SIL OFL are bundled in `web/fonts/OFL.txt`; no external font calls or substituted logo.
-
-## Validation / build / release
-
-Node.js 22+, no npm dependencies. `npm run check`, `npm run build`. `scripts/build.mjs` uses an explicit code/font allowlist and always emits an empty public graph. Tests cover status mapping, conflicts, stale/error data, publication evidence, session clearing and public artifact privacy. Browser QA covers desktop/mobile, empty/demo/error, keyboard, reduced motion and logout.
-
-**This change is prepared for review, not deployed.** The selected dashboard mode is offline snapshot import; Google OAuth is not a release prerequisite. Existing production graph/events are independent. The previously prepared optional private dashboard API is not called by this frontend and is not required for the offline release.
-
-GitHub Pages deploys only main. Do not merge or deploy without the owner's further instruction. No new OAuth privacy-policy page or credentials are needed for this mode.
-
-Overview uses two desktop columns with scoped evidence counts, an accessible idea-state donut and explicit partial coverage. Current/proposed pricing stays distinct; absent proposals remain TBD. Historical prices are not proposed prices. Report refresh is local only; the UI states that new data requires a new import.
-
-Service views distinguish ACTIVE, IDEA/PROPOSED, PREPARING/PILOT and other lifecycle values from the imported register. ACTIVE never implies confirmed availability. Idea counts include service candidates by stable service ID without duplicating records or mixing NOW tasks. Service details retain descriptions, audience, value, included items, booking route and capacity when present; absent values stay TBD.
-
-CEO reporting v2 now separates the full NOW register from a maximum of five
-P0/P1 actionable NEXT items. Business decisions require explicit
-`decision_type: business`; unclassified open questions appear in Data Quality.
-Conflicted campaigns are excluded from the unambiguous running/preparing list.
-The AI JSON download exports the complete imported projection with source
-provenance, snapshot/import times, view IDs and current UI filters. Refresh only
-recalculates the imported snapshot; it never refreshes provider read timestamps.
-
-NOW provides priority, task status, area and owner filters; Services independently
-filters availability and audience/type. Stable LF-SVC IDs merge into one entity,
-retaining conflicting field values and additional source provenance. Ideas use
-only explicit FOCUS NOW/LATER/PARKED classifications; otherwise UNCLASSIFIED.
-Campaign coverage reports missing or unavailable GitHub briefs separately from
-creative approval and publication evidence. Public builds contain no imported
-business snapshots; use explicit private JSON import for current reporting data.
-
-### Compact reporting / campaign ingestion
-
-Overview uses stacked, full-width sections. NOW and NEXT are separate projections
-(maximum five rows on Overview); services, campaign states and Facebook posts use
-compact tables. ACTIVE is independent of current availability. Colors map status
-semantics without changing the canonical value. Unknown/conflicting campaign
-lifecycle appears in REVIEW. Business decisions still require explicit evidence;
-missing supplier, dates and metadata remain data gaps.
-
-The former `coverage:campaign-details` was a synthetic coverage marker, not a
-provider source. It is excluded from source counts and replaced by per-campaign
-brief availability. Source reads older than 24 hours are marked stale; failed
-reads retain their original successful timestamps. Refresh never refreshes these
-timestamps. A real GitHub discovery/API failure remains a named unavailable source.
-
-Campaign discovery is a read-only local/server-side snapshot step, not an
-unauthenticated browser call into the private repository:
-
-```sh
-node scripts/enrich-campaign-briefs.mjs /outside/repo/input.json /outside/repo/new-output.json
-```
-
-Use `GH_TOKEN` or `GITHUB_TOKEN` from the execution environment when needed. The
-script resolves `lady-fitness-core/main`, pins its SHA, discovers only matching
-`MD campaigns/LF_CAMPAIGN_<SLUG>/LF_CAMPAIGN_<SLUG>_BRIEF.md` paths, reads briefs,
-and joins only an exact Business Campaign ID or explicit storage slug/link.
-It never falls back to Drive Markdown, writes canonical files, updates Sheets,
-or changes campaign approval. Previous successful briefs remain stale on read
-failure. Output must be a new file outside this public repo (mode 0600). Scripts,
-provider payloads and private snapshots are excluded from the public build.
-Import the enriched snapshot explicitly; service connection still only supplies
-map/event data. Old imports need enrichment to include current canonical briefs.
-
-An available asset link means recorded evidence, not verified publication or
-anonymous file access. Drive media is linked rather than automatically embedded.
-Post-specific objectives missing in the output register remain TBD; a campaign
-objective is not silently substituted. New-product dates are shown only when the
-source supports them; unknown dates do not establish a newest-first business fact.
+Dated audit evidence remains historical, not executable release instructions.
