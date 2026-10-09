@@ -8,6 +8,7 @@ import {parseSnapshot} from './snapshot.mjs';
 import {createDashboard} from './dashboard.mjs?v=20261009-same-origin-v1';
 import {AREAS,normalizeGraph,ActivityStore,safeUrl,matchesSearch} from './model.mjs';
 const $=id=>document.getElementById(id), ns='http://www.w3.org/2000/svg';
+$('connection').textContent='Pripájam…';
 const serviceConfig=await(await fetch('./config.json',{cache:'no-store'})).json(),serviceProfile=connectionProfile(serviceConfig);
 let graph=normalizeGraph({nodes:[],edges:[],coverage:{}}), demoGraph=null, selected=null, selectedEdge=null, page=0,zoom=1,dx=0,dy=0;
 let endpoint='',stream=null,retry=null,closed=true,lastSequence=0,lastSync=null,sessionToken='',transport='sse',eventPolling=false,eventTimer=null,eventCursor=null,connectionEpoch=0,historyCatchingUp=false,eventStreamStale=false;
@@ -134,7 +135,29 @@ function attach(){if(closed)return;const epoch=connectionEpoch;if(transport==='p
  stream.onerror=()=>{status('Obnovujem spojenie…','reconnecting');stream.close();retry=setTimeout(attach,3000);};
 }
 const dashboard=createDashboard({refreshLive:()=>liveReport(),focusMap(fileId,sourceId,url){for(const id of ['search','source','type'])$(id).value='';$('archive').checked=true;const node=graph.nodes.find(n=>n.id===sourceId||n.id==='drive:'+fileId||n.url===url||n.provenance?.file_id===fileId);if(node)select(node.id);else{$('search').value=fileId||sourceId;render();$('notice').textContent='Zdroj nie je v načítanom grafe; canonical odkaz zostáva v detaile dashboardu.';}}});
-async function liveReport(){const epoch=connectionEpoch;if(closed)return;try{const r=await fetch(endpoint+'/api/dashboard',{credentials:'include',cache:'no-store',signal:AbortSignal.timeout(25000)});if(epoch!==connectionEpoch)return;if(r.status===401||r.status===403)throw Error('Dashboard prihlásenie vypršalo alebo prehliadač blokuje session cookie. Pripoj službu znova.');if(!r.ok)throw Error('Supabase dashboard HTTP '+r.status+' — posledné úspešné údaje zostávajú zachované.');const data=await r.json();if(epoch===connectionEpoch&&!closed)dashboard.acceptLive(data);}catch(e){if(epoch===connectionEpoch&&!closed)dashboard.liveError(e.message);throw e;}}
+async function liveReport({restore=false}={}){
+ const epoch=connectionEpoch;if(closed&&!restore)return;
+ try{
+  const r=await fetch(endpoint+'/api/dashboard',{credentials:'include',cache:'no-store',signal:AbortSignal.timeout(25000)});
+  if(epoch!==connectionEpoch)return;
+  if(r.status===401||r.status===403){
+   if(restore){stop();return false;}
+   throw Error('Dashboard prihlásenie vypršalo alebo prehliadač blokuje session cookie. Pripoj službu znova.');
+  }
+  if(!r.ok)throw Error('Supabase dashboard HTTP '+r.status+' — posledné úspešné údaje zostávajú zachované.');
+  const data=await r.json();if(epoch!==connectionEpoch)return;
+  if(restore){closed=false;dashboard.setLiveConnected(true);}
+  if(!closed)dashboard.acceptLive(data);
+  if(restore)status('Pripojené','connected');
+  return true;
+ }catch(e){
+  if(epoch===connectionEpoch){
+   if(restore){closed=true;dashboard.clear();status('Obnova dát zlyhala','reconnecting');}
+   if(restore||!closed)dashboard.liveError(e.message);
+  }
+  throw e;
+ }
+}
 document.addEventListener('lf-session-expired',()=>{stop();$('notice').textContent='Prihlásenie vypršalo.';});
 const endpointSafe=value=>resolveEndpoint(value,serviceProfile);
 $('connect').onclick=()=>$('connection-dialog').showModal();$('cancel').onclick=()=>$('connection-dialog').close();$('disconnect').onclick=()=>{stop();fetch(endpoint+'/api/logout',{method:'POST',credentials:'include'}).catch(()=>{});$('connection-dialog').close();};
@@ -156,9 +179,12 @@ $('demo').onclick=()=>{
  const read='demo-read-'+crypto.randomUUID(),write='demo-write-'+crypto.randomUUID();const emit=(op,status,id,source,target,error=null)=>acceptEvent({event_id:crypto.randomUUID(),operation_id:id,timestamp:new Date().toISOString(),actor_id:'actor:demo',operation:op,status,source_id:source,target_id:target,evidence:{summary:'Syntetická demo operácia; nie business aktivita.'},error,demo:true});
  emit('read','started',read,'github:demo:README.md','actor:demo');emit('write','started',write,'actor:demo','drive:demo-sheet');setTimeout(()=>emit('read','completed',read,'github:demo:README.md','actor:demo'),2400);setTimeout(()=>emit('write','failed',write,'actor:demo','drive:demo-sheet','DEMO: simulovaná chyba prístupu.'),3900);
 };
-try{const cached=await localGraph('get');if(cached){const next=parseSnapshot({format:'lf-operating-snapshot',version:1,graph:cached.graph,dashboard:cached.dashboard});if(!Number.isFinite(Date.parse(cached.importedAt)))throw Error('Neplatný dátum uloženého importu.');importedAt=cached.importedAt;importFilename=cached.filename||'snapshot.json';persisted=true;setGraph(next.graph||{nodes:[],edges:[]});dashboard.importSnapshot(next.dashboard,{importedAt,filename:importFilename,persisted,graphOnly:!next.dashboard});}else setGraph(await(await fetch('./data/graph.json')).json());}catch(e){storageNote='Lokálne uložený snapshot nie je dostupný; importuj súbor.';try{setGraph(await(await fetch('./data/graph.json')).json());}catch{render();}}
+try{const cached=serviceProfile.sameOrigin?null:await localGraph('get');if(cached){const next=parseSnapshot({format:'lf-operating-snapshot',version:1,graph:cached.graph,dashboard:cached.dashboard});if(!Number.isFinite(Date.parse(cached.importedAt)))throw Error('Neplatný dátum uloženého importu.');importedAt=cached.importedAt;importFilename=cached.filename||'snapshot.json';persisted=true;setGraph(next.graph||{nodes:[],edges:[]});dashboard.importSnapshot(next.dashboard,{importedAt,filename:importFilename,persisted,graphOnly:!next.dashboard});}else setGraph(await(await fetch('./data/graph.json')).json());}catch(e){storageNote='Lokálne uložený snapshot nie je dostupný; importuj súbor.';try{setGraph(await(await fetch('./data/graph.json')).json());}catch{render();}}
 $('tracking-scope').textContent=serviceConfig.scope;if(serviceProfile.sameOrigin){$('endpoint').value=location.origin;$('endpoint').disabled=true;$('connect').hidden=false;}else if(serviceConfig.eventServiceUrl){$('endpoint').value=endpointSafe(serviceConfig.eventServiceUrl);$('connect').hidden=false;}else if(['127.0.0.1','localhost'].includes(location.hostname))$('endpoint').value=location.origin;
 // Len diagnostika pre browser QA; žiadne tajné údaje ani plné dokumenty.
 window.lfMapDiagnostics=()=>({nodes:current().nodes.length,edges:current().edges.length,active:activities().active.size,history:activities().history.length,lastSequence,lastSync,importedAt,persisted,demo:$('demo-mode').checked});
 
 window.lfDashboardDiagnostics=dashboard.diagnostics;
+
+// Restore through the canonical loader; the HttpOnly cookie stays browser-managed.
+if(serviceProfile.sameOrigin){status('Pripájam…','reconnecting');try{await liveReport({restore:true});}catch{}}else status('Odpojené');
