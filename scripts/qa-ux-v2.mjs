@@ -41,7 +41,13 @@ try{
    const current=await page.locator('html').getAttribute('data-theme');if(current!==theme)await page.locator('#theme-toggle').click();
    for(const view of ['Prehľad','Úlohy','Kalendár','Služby','Produkty','Kampane']){
     await nav(page,view);await noOverflow(page);await verifyContrast(page);
-    if(view==='Kalendár'){assert(await page.locator('.ux-calendar td').count()===42,'Calendar grid cells');assert(await page.locator('.ux-today').count()===1,'Today highlight');}
+    if(view==='Kalendár'){assert(await page.locator('.ux-calendar td').count()===42,'Calendar grid cells');assert(await page.locator('.ux-today').count()===1,'Today highlight');
+     if(name==='narrow'){assert(await page.locator('.ux-mobile-agenda').isVisible(),'Mobile agenda visible');assert(await page.locator('.ux-mobile-day-count').count()>0,'Month cells show event counts');
+      assert(await page.locator('.ux-calendar-event').first().evaluate(n=>getComputedStyle(n).display)==='none','Unusable narrow calendar labels hidden');
+      const day=page.locator('.ux-mobile-agenda .ux-agenda-day').first();if(!(await day.evaluate(n=>n.open)))await day.locator('summary').click();
+      const link=day.locator('.ux-agenda-event').first();assert(await link.isVisible(),'Agenda has complete readable event titles');await link.click();assert(await page.locator('#dashboard-detail').isVisible(),'Agenda preserves canonical detail action');await page.locator('#dashboard-detail').getByRole('button',{name:'Zavrieť',exact:true}).click();
+     }
+    }
     if(name==='desktop'&&view==='Prehľad'){const count=await page.locator('.ux-summary-row').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length);assert(count===3,'Desktop summary 3 columns');}
     await page.screenshot({path:path.join(out,name+'-'+theme+'-'+view+'.png'),fullPage:true});
    }
