@@ -3,7 +3,7 @@ import {pragueToday} from './ux-model.mjs?v=20261010-ux-v2';
 import {configureStatusCatalog,registryStatus,statusLabel,statusDomain} from './status-model.mjs?v=20261009-status-registry';
 import {renderOperational,operationalViews,WORK,displayDate} from './operational.mjs?v=20261009-supabase-v2';
 import {mergeLiveReport} from './live-report.mjs?v=20261009-supabase-v2';
-import {SECTIONS,DashboardState,views,freshness,publicationLabel,taskLabel,dateValue,metrics,campaignCoverage,ideaBucket} from './dashboard-model.mjs?v=20261009-supabase-v2';
+import {SECTIONS,DashboardState,views,freshness,publicationLabel,taskLabel,dateValue,metrics,campaignCoverage,ideaBucket} from './dashboard-model.mjs?v=20261010-ux-v2';
 import {enhanceTable,statusTone,statusRank,campaignGroup,dataStatus,evidenceFor,postDisplay,taskCategory,groupTasksByCategory,latestNowItems,nowAddedDate,itemTitle} from './reporting.mjs?v=20261009-supabase-v2';
 import {snapshotAge} from './snapshot.mjs';
 import {demoProjection} from './dashboard-demo.mjs';

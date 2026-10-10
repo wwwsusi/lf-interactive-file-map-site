@@ -63,7 +63,7 @@ dialog,#dashboard-detail{background:var(--paper);color:var(--ink);border:1px sol
 .ux-calendar th,.ux-calendar td{border:1px solid var(--line);padding:.4rem}
 .ux-calendar td{height:116px;vertical-align:top;overflow-wrap:anywhere}
 .ux-calendar time{display:block;margin-bottom:.4rem;font-weight:700}
-.ux-calendar .ux-outside{color:var(--muted);background:var(--soft)}
+.ux-calendar .ux-outside{color:var(--muted);background:var(--subtle)}
 .ux-calendar .ux-today{box-shadow:inset 0 0 0 2px var(--pink)}
 .ux-calendar .ux-today time{color:var(--pink)}
 .ux-calendar-event{display:block;width:100%;text-align:left;white-space:normal;overflow-wrap:anywhere;font-size:.78rem;padding:.35rem;margin:.3rem 0;line-height:1.3}
