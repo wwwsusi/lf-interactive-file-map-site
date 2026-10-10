@@ -1,11 +1,14 @@
 // Browser QA only: synthetic DTO; no live business data, server credentials or deployment.
-import {chromium} from '@playwright/test';
+import {chromium,webkit} from '@playwright/test';
 import {fixture,item} from '../tests/fixtures/ux-v2.mjs';
 import {pragueToday,addDays} from '../web/ux-model.mjs';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-const root=path.resolve(import.meta.dirname,'../dist'),out=path.resolve(import.meta.dirname,'../qa-artifacts');
+const browserName=process.env.LF_UX_BROWSER||'chromium';
+const browserType={chromium,webkit}[browserName];
+if(!browserType)throw Error('Unsupported synthetic QA browser: '+browserName);
+const root=path.resolve(import.meta.dirname,'../dist'),out=path.resolve(import.meta.dirname,'../qa-artifacts',browserName);
 await fs.mkdir(out,{recursive:true});
 const types={'.mjs':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.woff':'font/woff'};
 const server=http.createServer(async(req,res)=>{try{const pathname=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));if(!file.startsWith(root+path.sep))throw Error('path');const bytes=await fs.readFile(file);res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');res.end(bytes);}catch{res.statusCode=404;res.end();}});
@@ -15,7 +18,7 @@ const data=fixture(),today=pragueToday();data.generated_at=new Date().toISOStrin
 data.items.find(i=>i.id==='t1').fields.due_date=today;data.items.find(i=>i.id==='t2').fields.due_date=addDays(today,5);data.items.find(i=>i.id==='t3').fields.due_date=addDays(today,-1);data.items.find(i=>i.id==='c1').fields.launch_date=today;
 for(let index=0;index<18;index++)data.items.push(item('many-'+index,'campaign',{status:'PUBLISHED',launch_date:today,owner:index%2?'Synthetic owner':null,next_step:'Synthetic next step'}));
 for(let index=0;index<4;index++)data.items.push(item('due-extra-'+index,'task',{task_status:'IN_PROGRESS',category:'STAFF',due_date:today}));
-const browser=await chromium.launch();const errors=[],results=[];let calls=0,logout=0,failed=false,authorized=true;
+const browser=await browserType.launch();const errors=[],results=[];let calls=0,logout=0,failed=false,authorized=true;
 async function setup(viewport,storageMode=null){
  const context=await browser.newContext({viewport});
  if(storageMode==='blocked')await context.addInitScript(()=>{Object.defineProperty(window,'localStorage',{get(){throw new Error('Synthetic unavailable storage');}});});
@@ -70,6 +73,6 @@ try{
  for(const mode of ['corrupt','blocked']){const {page,context}=await setup({width:820,height:1180},mode);await nav(page,'Služby');assert((await page.locator('#dashboard .report-table th').allTextContents()).includes('Owner'),'Safe storage defaults');await noOverflow(page);await context.close();}
  assert(errors.length===0,'Browser errors: '+errors.join('; '));
  results.push('Keyboard disclosure, month navigation/detail, column persistence, unknown/NULL data, empty/many campaigns, failed reload, logout and storage fallbacks PASS');
- results.push('Chromium synthetic QA only. Safari direct QA NOT PERFORMED. Screenshots captured; human visual review remains owner review.');
+ results.push(browserName+' synthetic QA only. This is NOT direct Safari or real-device testing. Screenshots captured; human visual review remains owner review.');
  await fs.writeFile(path.join(out,'results.txt'),results.join('\n')+'\n');console.log(results.join('\n'));
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
