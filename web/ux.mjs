@@ -1,4 +1,4 @@
-import {uxProjection,pragueToday,calendarEvents,monthGrid,moveMonth,availableColumns,loadPreferences,savePreferences,reorderColumn,toggleColumn,visibleColumns,textPreview,campaignTaskBucket} from './ux-model.mjs?v=20261010-ux-v2-campaign-link';
+import {uxProjection,pragueToday,calendarEvents,monthGrid,moveMonth,availableColumns,loadPreferences,savePreferences,reorderColumn,toggleColumn,visibleColumns,textPreview,campaignTaskBucket} from './ux-model.mjs?v=20261010-ux-v2-category-alias';
 import {statusLabel,statusDomain} from './status-model.mjs?v=20261009-status-registry';
 import {day,displayDate} from './operational.mjs?v=20261009-supabase-v2';
 export function renderLongText(value,parent,make){const text=textPreview(value);if(!text.long)return make('span',text.full||'—',parent);const box=make('details',null,parent,'ux-long-text');make('summary',text.preview+' · Zobraziť / skryť celý text',box);make('p',text.full,box,'ux-full-text');return box;}
