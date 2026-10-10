@@ -87,7 +87,7 @@ test('missing/disabled canonical live status is not hidden or mislabeled as open
  data.items.push(unknown,disabled);
  const v=uxProjection(data,'2026-10-10');
  assert.equal(taskState(unknown),'uncertain');assert.equal(taskState(disabled),'uncertain');
- assert.deepEqual(v.uncertain.map(i=>i.id),['live-unknown','live-disabled']);
+ assert.deepEqual(v.uncertain.map(i=>i.id),['live-unknown','live-disabled','t2'],'A disabled canonical status affects all tasks using that status');
  assert(!v.important.flatMap(g=>g.items).some(i=>i.id==='live-unknown'||i.id==='live-disabled'));
  assert(!v.overdue.some(i=>i.id===unknown.id));
  assert(!v.dueSoon.some(i=>i.id===disabled.id));
