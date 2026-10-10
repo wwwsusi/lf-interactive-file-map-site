@@ -12,20 +12,26 @@ permissions:
 jobs:
   synthetic-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - run: npm install --ignore-scripts
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run build
       - run: npm run qa:ux
+        env:
+          LF_UX_BROWSER: ${{ matrix.browser }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: synthetic-ux-v2-qa
+          name: synthetic-ux-v2-qa-${{ matrix.browser }}
           path: qa-artifacts/
           if-no-files-found: ignore
           retention-days: 7
