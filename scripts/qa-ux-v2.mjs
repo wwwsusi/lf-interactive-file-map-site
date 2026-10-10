@@ -28,6 +28,11 @@ async function setup(viewport,storageMode=null){
 }
 const nav=async(page,label)=>{await page.locator('#dashboard-nav').getByRole('button',{name:label,exact:true}).click();};
 const noOverflow=async(page)=>{const sizes=await page.evaluate(()=>({width:innerWidth,body:document.documentElement.scrollWidth}));assert(sizes.body<=sizes.width+1,'Unwanted layout overflow '+JSON.stringify(sizes));const overlaps=await page.locator('header button:not([hidden])').evaluateAll(nodes=>{const boxes=nodes.map(n=>n.getBoundingClientRect());return boxes.some((a,i)=>boxes.some((b,j)=>j>i&&Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1));});assert(!overlaps,'Header controls overlap');};
+const verifyContrast=async page=>{const failures=await page.evaluate(()=>{
+ const rgb=value=>(value.match(/[\\d.]+/g)||[]).map(Number),luminance=c=>c.slice(0,3).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((sum,v,index)=>sum+v*[.2126,.7152,.0722][index],0);
+ const selectors='.ux-summary-row h3,.ux-counts dt,.ux-counts dd,.ux-item .dash-badge,.ux-calendar time,.ux-calendar-event,.ux-calendar-more summary,.ux-long-text summary,.ux-column-row label,.ux-entities .report-table th';
+ return [...document.querySelectorAll(selectors)].filter(n=>n.getBoundingClientRect().height>0).flatMap(n=>{const style=getComputedStyle(n),fg=rgb(style.color);let ancestor=n,bg=null;while(ancestor){const color=rgb(getComputedStyle(ancestor).backgroundColor);if(color.length>=3&&(color.length===3||color[3]===1)){bg=color;break;}ancestor=ancestor.parentElement;}if(!bg)return [{text:n.textContent,reason:'unknown background'}];const l1=luminance(fg),l2=luminance(bg),ratio=(Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05),font=parseFloat(style.fontSize),large=font>=24||(font>=18.66&&Number(style.fontWeight)>=700),minimum=large?3:4.5;return ratio+.01<minimum?[{text:n.textContent.slice(0,60),ratio,minimum}]:[];});
+ });assert(failures.length===0,'New UI contrast: '+JSON.stringify(failures));};
 try{
  const {context,page}=await setup({width:1440,height:1000});
  for(const [name,viewport]of [['desktop',{width:1440,height:1000}],['tablet-landscape',{width:1180,height:820}],['tablet-portrait',{width:820,height:1180}],['narrow',{width:390,height:844}]]){
@@ -35,13 +40,13 @@ try{
   for(const theme of ['dark','light']){
    const current=await page.locator('html').getAttribute('data-theme');if(current!==theme)await page.locator('#theme-toggle').click();
    for(const view of ['Prehľad','Úlohy','Kalendár','Služby','Produkty','Kampane']){
-    await nav(page,view);await noOverflow(page);
+    await nav(page,view);await noOverflow(page);await verifyContrast(page);
     if(view==='Kalendár'){assert(await page.locator('.ux-calendar td').count()===42,'Calendar grid cells');assert(await page.locator('.ux-today').count()===1,'Today highlight');}
     if(name==='desktop'&&view==='Prehľad'){const count=await page.locator('.ux-summary-row').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length);assert(count===3,'Desktop summary 3 columns');}
     await page.screenshot({path:path.join(out,name+'-'+theme+'-'+view+'.png'),fullPage:true});
    }
   }
-  results.push(name+' light/dark: navigation, no page overflow, header controls and calendar PASS');
+  results.push(name+' light/dark: navigation, no page overflow, header controls, calendar and new UI text contrast PASS');
  }
  await page.setViewportSize({width:1440,height:1000});await nav(page,'Úlohy');
  const long=page.locator('.ux-long-text').first();await long.locator('summary').focus();await page.keyboard.press('Enter');assert(await long.getAttribute('open')!==null,'Keyboard expands next step');assert((await long.locator('p').innerText()).length===200,'Full next_step preserved');await page.keyboard.press('Enter');assert(await long.getAttribute('open')===null,'Keyboard collapses next step');
