@@ -9,8 +9,36 @@ export const CAMPAIGN_BUCKETS=[
 ];
 export function pragueToday(now=new Date()){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);const get=t=>parts.find(p=>p.type===t).value;return get('year')+'-'+get('month')+'-'+get('day');}
 export function addDays(value,count){if(!day(value))return null;const date=new Date(value+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+count);return date.toISOString().slice(0,10);}
-export function taskIsOpen(item){const code=item.fields.task_status||item.fields.status;if(liveStatusCatalog())return registryStatus(code,'work')?.is_terminal===false;return Object.hasOwn(WORK,code)&&!statusTerminal(code,'work');}
-export function campaignBuckets(data){configureStatusCatalog(data);const items=data.items.filter(i=>i.kind==='campaign'),known=new Set();const groups=CAMPAIGN_BUCKETS.map(bucket=>{const codes=bucket.codes.filter(code=>data.origin!=='supabase'||registryStatus(code,'campaign'));codes.forEach(c=>known.add(c));return {...bucket,available:codes.length>0,items:items.filter(i=>codes.includes(i.fields.status))};});return {groups,other:items.filter(i=>!known.has(i.fields.status))};}
+// Unknown statuses are neither open nor terminal: expose them for review instead of silently dropping tasks.
+export function taskState(item){
+ const code=String(item.fields.task_status||item.fields.status||'').trim(),normal=code.toUpperCase();
+ if(liveStatusCatalog()){
+  const meta=registryStatus(code,'work');
+  return !meta||meta.is_enabled===false?'uncertain':meta.is_terminal?'terminal':'open';
+ }
+ if(['COMPLETED','CANCELLED','RETIRED'].includes(normal))return 'terminal';
+ if(Object.hasOwn(WORK,normal)||['TO-DO','RUNNING','NEZAČATÉ','V PRÍPRAVE','PREBIEHA'].includes(normal))return 'open';
+ return 'uncertain';
+}
+export const taskIsOpen=item=>taskState(item)==='open';
+// Legacy snapshots represent a campaign stage through lifecycle; live Supabase always uses canonical status.
+const campaignCode=(item,origin)=>{
+ if(origin==='supabase')return String(item.fields.status||'').trim().toUpperCase();
+ if(item.conflicts?.some(c=>['lifecycle','identity'].includes(c.field)))return '';
+ const code=String(item.fields.lifecycle||item.fields.status||'').trim().toUpperCase();
+ // RUNNING/ACTIVE are not proof of publication. Keep them visibly unclassified.
+ return ['PUBLISHED','IN_REVIEW','PREPARING','DRAFT','IDEA','COMPLETED'].includes(code)?code:'';
+};
+export function campaignBuckets(data){
+ configureStatusCatalog(data);
+ const items=data.items.filter(i=>i.kind==='campaign'),known=new Set();
+ const groups=CAMPAIGN_BUCKETS.map(bucket=>{
+  const codes=bucket.codes.filter(code=>data.origin!=='supabase'||registryStatus(code,'campaign'));
+  codes.forEach(c=>known.add(c));
+  return {...bucket,available:codes.length>0,items:items.filter(i=>codes.includes(campaignCode(i,data.origin)))};
+ });
+ return {groups,other:items.filter(i=>!known.has(campaignCode(i,data.origin)))};
+}
 export function campaignTaskBucket(item,groups){
  const linked=new Set(Array.isArray(item.related_ids)?item.related_ids:[]);
  const matched=groups.filter(g=>g.items.some(c=>linked.has(c.id))).map(g=>g.id);
@@ -21,7 +49,7 @@ export function qualitySummary(validation){const summary=validation?.summary;if(
 export function calendarEvents(data){return data.items.flatMap(item=>{const type=item.kind==='task'?'due':['service','product','campaign'].includes(item.kind)?'launch':null;const date=type&&day(item.fields[type+'_date']);return date?[{item,type,date}]:[];}).sort((a,b)=>a.date.localeCompare(b.date)||a.item.id.localeCompare(b.item.id));}
 export function moveMonth(month,delta){if(!day(month+'-01'))throw Error('Invalid month');const date=new Date(month+'-01T12:00:00Z');date.setUTCMonth(date.getUTCMonth()+delta);return date.toISOString().slice(0,7);}
 export function monthGrid(month,today=pragueToday()){if(!day(month+'-01'))throw Error('Invalid month');const first=month+'-01',offset=(new Date(first+'T12:00:00Z').getUTCDay()+6)%7,start=addDays(first,-offset);return Array.from({length:42},(_,index)=>{const date=addDays(start,index);return {date,current:date.startsWith(month),today:date===today};});}
-export function uxProjection(data,today=pragueToday()){configureStatusCatalog(data);const tasks=data.items.filter(i=>i.kind==='task').sort((a,b)=>({P0:0,P1:1,P2:2}[a.fields.priority]??9)-({P0:0,P1:1,P2:2}[b.fields.priority]??9)||a.id.localeCompare(b.id)),open=tasks.filter(taskIsOpen),countBy=(items,key)=>{const counts=new Map();for(const item of items){const value=key(item)||'Other / Unclassified';counts.set(value,(counts.get(value)||0)+1);}return [...counts];};const statuses=countBy(tasks,i=>i.fields.task_status||i.fields.status);for(const meta of statusOptions('work'))if(!statuses.some(([code])=>code===meta.code))statuses.push([meta.code,0]);return {today,tasks,counts:[['Úlohy',tasks.length],['Kampane',data.items.filter(i=>i.kind==='campaign').length],['Služby',data.items.filter(i=>i.kind==='service').length],['Produkty',data.items.filter(i=>i.kind==='product').length]],categories:countBy(tasks,i=>i.fields.category),statuses,dueSoon:open.filter(i=>day(i.fields.due_date)&&i.fields.due_date>=today&&i.fields.due_date<=addDays(today,5)),overdue:open.filter(i=>day(i.fields.due_date)&&i.fields.due_date<today),launches:calendarEvents(data).filter(e=>e.type==='launch'&&e.date>=today),campaigns:campaignBuckets(data),quality:qualitySummary(data.validation),important:['campaigns','brand','staff','other'].map(id=>({id,items:open.filter(i=>taskGroup(i)===id)}))};}
+export function uxProjection(data,today=pragueToday()){configureStatusCatalog(data);const tasks=data.items.filter(i=>i.kind==='task').sort((a,b)=>({P0:0,P1:1,P2:2}[a.fields.priority]??9)-({P0:0,P1:1,P2:2}[b.fields.priority]??9)||a.id.localeCompare(b.id)),open=tasks.filter(taskIsOpen),uncertain=tasks.filter(i=>taskState(i)==='uncertain'),countBy=(items,key)=>{const counts=new Map();for(const item of items){const value=key(item)||'Other / Unclassified';counts.set(value,(counts.get(value)||0)+1);}return [...counts];};const statuses=countBy(tasks,i=>i.fields.task_status||i.fields.status);for(const meta of statusOptions('work'))if(!statuses.some(([code])=>code===meta.code))statuses.push([meta.code,0]);return {today,tasks,counts:[['Úlohy',tasks.length],['Kampane',data.items.filter(i=>i.kind==='campaign').length],['Služby',data.items.filter(i=>i.kind==='service').length],['Produkty',data.items.filter(i=>i.kind==='product').length]],categories:countBy(tasks,i=>i.fields.category),statuses,uncertain,dueSoon:open.filter(i=>day(i.fields.due_date)&&i.fields.due_date>=today&&i.fields.due_date<=addDays(today,5)),overdue:open.filter(i=>day(i.fields.due_date)&&i.fields.due_date<today),launches:calendarEvents(data).filter(e=>e.type==='launch'&&e.date>=today),campaigns:campaignBuckets(data),quality:qualitySummary(data.validation),important:['campaigns','brand','staff','other'].map(id=>({id,items:open.filter(i=>taskGroup(i)===id)}))};}
 export const COLUMN_DEFINITIONS=[
  {id:'name',label:'Názov',required:true,default:true},
  {id:'lifecycle',label:'Status / Lifecycle',fields:['lifecycle'],default:true},
