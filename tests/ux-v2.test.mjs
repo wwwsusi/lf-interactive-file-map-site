@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {SECTIONS,DashboardState} from '../web/dashboard-model.mjs';
-import {uxProjection,campaignBuckets,taskGroup,calendarEvents,pragueToday,addDays,monthGrid,moveMonth,qualitySummary,availableColumns,loadPreferences,savePreferences,reorderColumn,toggleColumn,visibleColumns,textPreview,preferenceKey} from '../web/ux-model.mjs';
+import {uxProjection,campaignBuckets,campaignTaskBucket,taskGroup,calendarEvents,pragueToday,addDays,monthGrid,moveMonth,qualitySummary,availableColumns,loadPreferences,savePreferences,reorderColumn,toggleColumn,visibleColumns,textPreview,preferenceKey} from '../web/ux-model.mjs';
 import {renderUX,renderLongText} from '../web/ux.mjs';
 import {fixture,item} from './fixtures/ux-v2.mjs';
 class Node{
@@ -43,4 +43,17 @@ test('mobile month keeps day counts and a full-text agenda with reusable detail 
  const buttons=nodes.filter(n=>n.className==='ux-agenda-event');
  assert(buttons.length>=2,'Full event labels preserved in mobile agenda');
  buttons[0].onclick();assert.equal(ui.opened.length,1,'Same canonical detail action opens from mobile agenda');
+});
+
+test('campaign work cards never inherit campaign publication from task workflow status',()=>{
+ const data=fixture(),groups=campaignBuckets(data).groups,task=data.items.find(i=>i.id==='t1');
+ assert.equal(task.fields.task_status,'IN_PROGRESS');
+ assert.equal(campaignTaskBucket(task,groups),'other','unlinked IN_PROGRESS work is not a published campaign');
+ task.related_ids=['c1'];assert.equal(campaignTaskBucket(task,groups),'published','explicit linked PUBLISHED campaign');
+ task.related_ids=['c2'];assert.equal(campaignTaskBucket(task,groups),'draft','explicit linked IDEA campaign');
+ task.related_ids=['c1','c2'];assert.equal(campaignTaskBucket(task,groups),'other','conflicting linked campaign statuses do not infer state');
+ task.related_ids=['unknown'];assert.equal(campaignTaskBucket(task,groups),'other','unknown relation remains visible without fabricated status');
+ task.related_ids=[];const ui=harness('overview',data);
+ assert(ui.parent.textContent.includes('Bez jednoznačného stavu kampane'),'unlinked work is visibly classified as unknown');
+ assert(ui.parent.textContent.includes('Synthetic t1'),'unlinked task remains visible');
 });
