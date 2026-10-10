@@ -16,6 +16,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='htt
 const assert=(value,message)=>{if(!value)throw Error(message);};
 const data=fixture(),today=pragueToday();data.generated_at=new Date().toISOString();data.backend_read_at=data.generated_at;
 data.items.find(i=>i.id==='t1').fields.due_date=today;data.items.find(i=>i.id==='t2').fields.due_date=addDays(today,5);data.items.find(i=>i.id==='t3').fields.due_date=addDays(today,-1);data.items.find(i=>i.id==='c1').fields.launch_date=today;
+data.items.push(item('legacy-fb-task','task',{task_status:'PREPARING',priority:'P1',category:'LF FB kampaň / FB post',next_step:'Synthetic legacy FB work'}));
 for(let index=0;index<18;index++)data.items.push(item('many-'+index,'campaign',{status:'PUBLISHED',launch_date:today,owner:index%2?'Synthetic owner':null,next_step:'Synthetic next step'}));
 for(let index=0;index<4;index++)data.items.push(item('due-extra-'+index,'task',{task_status:'IN_PROGRESS',category:'STAFF',due_date:today}));
 const browser=await browserType.launch();const errors=[],results=[];let calls=0,logout=0,failed=false,authorized=true;
@@ -64,6 +65,7 @@ try{
  await nav(page,'Kampane');assert(await page.locator('.ux-campaign-kpis .ux-panel').count()===5,'Five campaign KPIs');assert((await page.locator('#dashboard').innerText()).includes('Žiadne kampane v tomto stave.'),'Empty campaign bucket');assert(await page.locator('.ux-campaign-list .ux-item').count()===20,'Many campaigns preserved');
  await nav(page,'Prehľad');assert((await page.locator('#dashboard').innerText()).includes('Synthetic t5'),'Unknown category not lost');
  const campaignColumn=page.locator('.ux-important-grid > .dash-group').first();
+ assert((await campaignColumn.innerText()).includes('Synthetic legacy-fb-task'),'Existing canonical LF FB category retained in Campaigns & Marketing');
  const bucketPanels=campaignColumn.locator(':scope > .ux-important-grid > .dash-group');
  const publishedPanel=campaignColumn.locator('.ux-panel').filter({has:page.getByRole('heading',{name:'Beží / Published',exact:true})}).first();
  assert(!(await publishedPanel.innerText()).includes('Synthetic t1'),'Unlinked IN_PROGRESS task must not appear as PUBLISHED campaign');
