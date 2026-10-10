@@ -11,6 +11,11 @@ export function pragueToday(now=new Date()){const parts=new Intl.DateTimeFormat(
 export function addDays(value,count){if(!day(value))return null;const date=new Date(value+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+count);return date.toISOString().slice(0,10);}
 export function taskIsOpen(item){const code=item.fields.task_status||item.fields.status;if(liveStatusCatalog())return registryStatus(code,'work')?.is_terminal===false;return Object.hasOwn(WORK,code)&&!statusTerminal(code,'work');}
 export function campaignBuckets(data){configureStatusCatalog(data);const items=data.items.filter(i=>i.kind==='campaign'),known=new Set();const groups=CAMPAIGN_BUCKETS.map(bucket=>{const codes=bucket.codes.filter(code=>data.origin!=='supabase'||registryStatus(code,'campaign'));codes.forEach(c=>known.add(c));return {...bucket,available:codes.length>0,items:items.filter(i=>codes.includes(i.fields.status))};});return {groups,other:items.filter(i=>!known.has(i.fields.status))};}
+export function campaignTaskBucket(item,groups){
+ const linked=new Set(Array.isArray(item.related_ids)?item.related_ids:[]);
+ const matched=groups.filter(g=>g.items.some(c=>linked.has(c.id))).map(g=>g.id);
+ return matched.length===1 && matched[0]!=='completed'?matched[0]:'other';
+}
 export function taskGroup(item){return ({CAMPAIGN:'campaigns',CAMPAIGNS:'campaigns',MARKETING_SOCIAL:'campaigns',BRAND_ASSETS:'brand',STAFF:'staff'})[String(item.fields.category||'').toUpperCase()]||'other';}
 export function qualitySummary(validation){const summary=validation?.summary;if(Array.isArray(summary)&&summary.some(r=>Number.isFinite(r.issue_count)&&r.issue_count>=0))return summary.filter(r=>Number.isFinite(r.issue_count)&&r.issue_count>=0).map(r=>[r.severity,r.issue_count]);if(Array.isArray(validation?.issues)){const counts=new Map();for(const issue of validation.issues){const severity=issue.severity||'Unknown';counts.set(severity,(counts.get(severity)||0)+1);}return [...counts];}return [];}
 export function calendarEvents(data){return data.items.flatMap(item=>{const type=item.kind==='task'?'due':['service','product','campaign'].includes(item.kind)?'launch':null;const date=type&&day(item.fields[type+'_date']);return date?[{item,type,date}]:[];}).sort((a,b)=>a.date.localeCompare(b.date)||a.item.id.localeCompare(b.item.id));}
