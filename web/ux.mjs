@@ -45,8 +45,17 @@ export function renderUX({data,section,parent,make,action,detail,statusBadge,tab
  if(section==='calendar'){
   const box=group('Kalendár'),toolbar=make('div',null,box,'ux-calendar-toolbar');action('← Predchádzajúci mesiac',()=>onCalendarMonth(moveMonth(calendarMonth,-1)),toolbar);make('h4',new Intl.DateTimeFormat('sk-SK',{month:'long',year:'numeric',timeZone:'Europe/Prague'}).format(new Date(calendarMonth+'-15T12:00:00Z')),toolbar);action('Nasledujúci mesiac →',()=>onCalendarMonth(moveMonth(calendarMonth,1)),toolbar);action('Dnes',()=>onCalendarMonth(v.today.slice(0,7)),toolbar);
   const table=make('table',null,box,'ux-calendar');table.setAttribute('aria-label','Mesačný kalendár '+calendarMonth);const thead=make('thead',null,table),head=make('tr',null,thead);for(const name of ['Po','Ut','St','Št','Pi','So','Ne'])make('th',name,head).scope='col';
-  const body=make('tbody',null,table),events=calendarEvents(data);let tr;
-  for(const [index,cell]of monthGrid(calendarMonth,v.today).entries()){if(index%7===0)tr=make('tr',null,body);const td=make('td',null,tr);td.className=(!cell.current?'ux-outside ':'')+(cell.today?'ux-today':'');const time=make('time',String(Number(cell.date.slice(-2))),td);time.dateTime=cell.date;if(cell.today)time.setAttribute('aria-current','date');const daily=events.filter(e=>e.date===cell.date);const event=(e,target)=>{const b=action((e.type==='launch'?'Spustenie · ':'Termín · ')+e.item.title,()=>detail(e.item),target);b.className='ux-calendar-event';b.title=e.item.id+' · '+cell.date;};daily.slice(0,2).forEach(e=>event(e,td));if(daily.length>2){const more=make('details',null,td,'ux-calendar-more');make('summary','+'+(daily.length-2)+' ďalších',more);const list=make('div',null,more);daily.slice(2).forEach(e=>event(e,list));}}
+  const body=make('tbody',null,table),events=calendarEvents(data),monthEvents=events.filter(e=>e.date.startsWith(calendarMonth));
+  const event=(e,target,className='ux-calendar-event')=>{const b=action((e.type==='launch'?'Spustenie · ':'Termín · ')+e.item.title,()=>detail(e.item),target);b.className=className;b.title=e.item.id+' · '+e.date;};
+  const eventCount=n=>n+' '+(n===1?'udalosť':n<5?'udalosti':'udalostí');
+  let tr;
+  for(const [index,cell]of monthGrid(calendarMonth,v.today).entries()){if(index%7===0)tr=make('tr',null,body);const td=make('td',null,tr);td.className=(!cell.current?'ux-outside ':'')+(cell.today?'ux-today':'');const time=make('time',String(Number(cell.date.slice(-2))),td);time.dateTime=cell.date;if(cell.today)time.setAttribute('aria-current','date');const daily=events.filter(e=>e.date===cell.date);
+   if(daily.length){const count=make('span',String(daily.length),td,'ux-mobile-day-count');count.setAttribute('aria-label',eventCount(daily.length));}
+   daily.slice(0,2).forEach(e=>event(e,td));if(daily.length>2){const more=make('details',null,td,'ux-calendar-more');make('summary','+'+(daily.length-2)+' ďalších',more);const list=make('div',null,more);daily.slice(2).forEach(e=>event(e,list));}}
+  const agenda=make('section',null,box,'ux-mobile-agenda');make('h4','Udalosti v mesiaci',agenda);
+  if(!monthEvents.length)make('p','Žiadne udalosti s potvrdeným dátumom.',agenda,'empty-row');
+  const byDay=new Map();for(const e of monthEvents){if(!byDay.has(e.date))byDay.set(e.date,[]);byDay.get(e.date).push(e);}
+  for(const [date,daily]of byDay){const group=make('details',null,agenda,'ux-agenda-day');group.open=date===v.today;make('summary',displayDate(date)+' · '+eventCount(daily.length),group);const list=make('div',null,group,'ux-agenda-events');for(const e of daily)event(e,list,'ux-agenda-event');}
   return;
  }
 }
