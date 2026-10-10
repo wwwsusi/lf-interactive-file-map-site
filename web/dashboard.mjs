@@ -1,5 +1,5 @@
-import {renderUX} from './ux.mjs?v=20261010-ux-v2-category-alias';
-import {pragueToday} from './ux-model.mjs?v=20261010-ux-v2-category-alias';
+import {renderUX} from './ux.mjs?v=20261011-legacy-status-guard';
+import {pragueToday} from './ux-model.mjs?v=20261011-legacy-status-guard';
 import {configureStatusCatalog,registryStatus,statusLabel,statusDomain} from './status-model.mjs?v=20261009-status-registry';
 import {renderOperational,operationalViews,WORK,displayDate} from './operational.mjs?v=20261009-supabase-v2';
 import {mergeLiveReport} from './live-report.mjs?v=20261009-supabase-v2';
