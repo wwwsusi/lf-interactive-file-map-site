@@ -57,3 +57,18 @@ test('campaign work cards never inherit campaign publication from task workflow 
  assert(ui.parent.textContent.includes('Bez jednoznačného stavu kampane'),'unlinked work is visibly classified as unknown');
  assert(ui.parent.textContent.includes('Synthetic t1'),'unlinked task remains visible');
 });
+
+test('real canonical LF FB kampaň / FB post category stays in Campaigns & Marketing without status inference',()=>{
+ const data=fixture(),legacy=item('legacy-fb-task','task',{task_status:'PREPARING',priority:'P1',category:'LF FB kampaň / FB post',next_step:'Synthetic campaign work'});
+ data.items.push(legacy);
+ assert.equal(taskGroup(legacy),'campaigns');
+ assert.equal(taskGroup(item('aliased','task',{category:'  LF FB kampaň / FB post  '})),'campaigns');
+ assert.equal(taskGroup(item('other','task',{category:'IT / Control Center'})),'other');
+ const v=uxProjection(data,'2026-10-10');
+ assert(v.important.find(g=>g.id==='campaigns').items.some(i=>i.id===legacy.id));
+ assert(!v.important.find(g=>g.id==='other').items.some(i=>i.id===legacy.id));
+ assert.equal(campaignTaskBucket(legacy,v.campaigns.groups),'other','task status cannot imply campaign PUBLISHED');
+ const ui=harness('overview',data);
+ assert(ui.parent.textContent.includes('Synthetic legacy-fb-task'),'legacy task visible in campaign work area');
+ assert(ui.parent.textContent.includes('Bez jednoznačného stavu kampane'),'unlinked task remains lifecycle unclassified');
+});
